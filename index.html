@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="id" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nazif - Sistem Tata Kelola Sampah Dayah</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tailwind Config for Production -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: {
+                            50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399',
+                            500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b',
+                        }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.4s ease-out forwards',
+                        'slide-up': 'slideUp 0.5s ease-out forwards',
+                        'float': 'float 6s ease-in-out infinite',
+                        'toast-in': 'toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { opacity: '0', transform: 'translateY(30px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+                        float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-15px)' } },
+                        toastIn: { '0%': { transform: 'translateX(100%)', opacity: '0' }, '100%': { transform: 'translateX(0)', opacity: '1' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"] { -moz-appearance: textfield; }
+        
+        .role-hidden { display: none !important; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .glass-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.3); }
+        .dark .glass-nav { background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        /* Custom Modal Transition */
+        .modal-active { opacity: 1; pointer-events: auto; }
+        .modal-inactive { opacity: 0; pointer-events: none; }
+        .modal-content-active { transform: scale(1) translateY(0); }
+        .modal-content-inactive { transform: scale(0.95) translateY(10px); }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 h-screen overflow-hidden text-sm relative transition-colors duration-300">
+
+    <!-- ==================== UI NOTIFIKASI & MODAL GLOBAL ==================== -->
+    <div id="toast-container" class="fixed top-24 right-4 md:top-24 md:right-8 z-[300] flex flex-col gap-3 pointer-events-none"></div>
+
+    <div id="confirm-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[300] flex items-center justify-center p-4 transition-opacity duration-200 modal-inactive">
+        <div id="confirm-content" class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 w-full max-w-sm shadow-2xl transition-transform duration-200 modal-content-inactive border border-slate-100 dark:border-slate-700">
+            <div class="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-5 text-emerald-600 shadow-inner" id="confirm-icon-bg">
+                <i data-lucide="help-circle" class="w-10 h-10" id="confirm-icon"></i>
+            </div>
+            <h3 id="confirm-title" class="text-2xl font-black text-center text-slate-800 dark:text-white mb-2 tracking-tight">Konfirmasi</h3>
+            <p id="confirm-message" class="text-center text-slate-500 dark:text-slate-400 mb-6 font-medium leading-relaxed">Apakah Anda yakin?</p>
+            
+            <div id="confirm-input-container" class="hidden mb-6">
+                <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2" id="confirm-input-label">Input Data</label>
+                <input type="text" id="confirm-input-value" class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-600 rounded-xl text-lg font-bold outline-none focus:border-emerald-500 transition-colors" placeholder="">
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()" class="flex-1 px-4 py-3.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-colors">Batal</button>
+                <button id="confirm-btn-action" class="flex-1 px-4 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-emerald-600/30">Lanjutkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== LANDING PAGE (ETALASE PUBLIK) ==================== -->
+    <div id="landing-page" class="absolute inset-0 z-[200] bg-slate-50 dark:bg-slate-900 overflow-y-auto transition-transform duration-500">
+        
+        <!-- Navbar Publik -->
+        <nav class="fixed top-0 w-full glass-nav z-50 transition-colors">
+            <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-20 md:h-24">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-gradient-to-br from-emerald-500 to-teal-400 p-2.5 rounded-xl shadow-lg shadow-emerald-500/30">
+                            <i data-lucide="leaf" class="w-7 h-7 text-white"></i>
+                        </div>
+                        <div>
+                            <span class="font-black text-2xl tracking-tight text-slate-800 dark:text-white block leading-none">Nazif<span class="text-emerald-500">.</span></span>
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest hidden md:block mt-1">Eco Dayah System</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 md:gap-4">
+                        <button onclick="toggleTheme()" class="p-2.5 text-slate-400 hover:text-emerald-500 transition-colors rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+                            <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
+                            <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                        </button>
+                        <button onclick="showLoginScreen()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 md:px-8 py-3 rounded-full font-bold transition-all shadow-lg shadow-emerald-600/30 active:scale-95 flex items-center gap-2 text-sm">
+                            Masuk Portal <i data-lucide="arrow-right" class="w-4 h-4 hidden md:block"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <div class="relative pt-32 pb-16 lg:pt-48 lg:pb-32 overflow-hidden">
+            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-100/50 via-slate-50 to-slate-50 dark:from-emerald-900/20 dark:via-slate-900 dark:to-slate-900 z-0"></div>
+            
+            <!-- Ornamen Dekoratif -->
+            <div class="absolute top-20 right-0 w-72 h-72 bg-emerald-400/20 rounded-full blur-3xl animate-float pointer-events-none"></div>
+            <div class="absolute top-60 left-10 w-48 h-48 bg-teal-400/10 rounded-full blur-3xl animate-float pointer-events-none" style="animation-delay: 2s;"></div>
+            
+            <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 relative z-10 text-center">
+                <div class="animate-slide-up" style="animation-delay: 0.1s;">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 font-bold text-xs md:text-sm mb-6 border border-emerald-200 dark:border-emerald-800/50 shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Platform Sirkular Ekonomi Pesantren
+                    </div>
+                </div>
+                
+                <h1 class="text-5xl md:text-7xl lg:text-8xl font-black text-slate-800 dark:text-white tracking-tight mb-6 leading-[1.1] animate-slide-up" style="animation-delay: 0.2s;">
+                    Ubah Sampah Menjadi <br />
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-400">Berkah & Sedekah.</span>
+                </h1>
+                
+                <p class="mt-4 text-lg md:text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto font-medium mb-10 leading-relaxed animate-slide-up" style="animation-delay: 0.3s;">
+                    Nazif membantu Dayah mendisiplinkan santri melalui gamifikasi kebersihan, sekaligus memutar nilai ekonomis sampah menjadi kas mandiri dan tabungan santri secara transparan.
+                </p>
+                
+                <div class="flex flex-col sm:flex-row justify-center gap-4 animate-slide-up" style="animation-delay: 0.4s;">
+                    <button onclick="showLoginScreen()" class="bg-slate-800 dark:bg-white text-white dark:text-slate-900 px-8 py-4 rounded-full font-bold text-lg hover:bg-slate-700 dark:hover:bg-slate-100 transition-colors shadow-xl">
+                        Mulai Kelola Sampah
+                    </button>
+                    <a href="#how-it-works" class="bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-8 py-4 rounded-full font-bold text-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
+                        Pelajari Sistem
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistik Publik (Live Data) -->
+        <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 relative z-20 -mt-8 mb-24 animate-slide-up" style="animation-delay: 0.5s;">
+            <div class="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[2.5rem] p-8 md:p-12 shadow-2xl shadow-slate-200/50 dark:shadow-none grid grid-cols-1 md:grid-cols-3 gap-10 text-center divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-slate-700 border border-white dark:border-slate-700/50">
+                <div class="pt-4 md:pt-0">
+                    <div class="w-12 h-12 bg-amber-50 dark:bg-amber-900/30 text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><i data-lucide="recycle" class="w-6 h-6"></i></div>
+                    <p class="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-xs mb-2">Total Diselamatkan</p>
+                    <h3 class="text-4xl md:text-5xl font-black text-slate-800 dark:text-white"><span id="lp-total-kg">0</span><span class="text-xl md:text-2xl font-bold text-slate-400 ml-1">Kg</span></h3>
+                </div>
+                <div class="pt-10 md:pt-0">
+                    <div class="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><i data-lucide="landmark" class="w-6 h-6"></i></div>
+                    <p class="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-xs mb-2">Kas Bersih Dayah</p>
+                    <h3 class="text-4xl md:text-5xl font-black text-emerald-600 dark:text-emerald-400" id="lp-kas-dayah">Rp 0</h3>
+                </div>
+                <div class="pt-10 md:pt-0">
+                    <div class="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 text-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><i data-lucide="wallet" class="w-6 h-6"></i></div>
+                    <p class="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-xs mb-2">Poin Hak Santri</p>
+                    <h3 class="text-4xl md:text-5xl font-black text-blue-600 dark:text-blue-400" id="lp-poin-santri">Rp 0</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alur & Manfaat Section -->
+        <div id="how-it-works" class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-16 md:py-24">
+            <div class="text-center mb-16 md:mb-20">
+                <h2 class="text-3xl md:text-5xl font-black text-slate-800 dark:text-white mb-6">Bagaimana Nazif Bekerja?</h2>
+                <p class="text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto font-medium">Sistem sirkular ekonomi tertutup yang menguntungkan semua pihak di lingkungan pesantren.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 relative">
+                <!-- Line Connector for Desktop -->
+                <div class="hidden md:block absolute top-[4.5rem] left-0 w-full h-1 bg-gradient-to-r from-emerald-100 via-teal-200 to-emerald-100 dark:from-slate-700 dark:via-emerald-900 dark:to-slate-700 -z-10"></div>
+                
+                <!-- Step 1 -->
+                <div class="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-slate-700 text-center relative group hover:-translate-y-2 transition-transform duration-300">
+                    <div class="w-20 h-20 bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-emerald-100 dark:border-emerald-800/50 group-hover:scale-110 transition-transform">
+                        <i data-lucide="trash-2" class="w-10 h-10"></i>
+                    </div>
+                    <div class="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center mx-auto -mt-10 mb-4 font-black border-4 border-white dark:border-slate-800 relative z-10">1</div>
+                    <h4 class="font-black text-xl text-slate-800 dark:text-white mb-3">Kumpulkan</h4>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">Santri memilah sampah botol & kardus di asrama, menanamkan kedisiplinan dan menjaga lingkungan tetap bersih.</p>
+                </div>
+                <!-- Step 2 -->
+                <div class="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-slate-700 text-center relative group hover:-translate-y-2 transition-transform duration-300">
+                    <div class="w-20 h-20 bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-teal-100 dark:border-teal-800/50 group-hover:scale-110 transition-transform">
+                        <i data-lucide="scale" class="w-10 h-10"></i>
+                    </div>
+                    <div class="w-8 h-8 bg-teal-600 text-white rounded-full flex items-center justify-center mx-auto -mt-10 mb-4 font-black border-4 border-white dark:border-slate-800 relative z-10">2</div>
+                    <h4 class="font-black text-xl text-slate-800 dark:text-white mb-3">Setor ke POS</h4>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">Ketua asrama membawa hasil pilahan ke posko. Operator menimbang dan mencatat di aplikasi Nazif.</p>
+                </div>
+                <!-- Step 3 -->
+                <div class="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-slate-700 text-center relative group hover:-translate-y-2 transition-transform duration-300">
+                    <div class="w-20 h-20 bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-blue-100 dark:border-blue-800/50 group-hover:scale-110 transition-transform">
+                        <i data-lucide="truck" class="w-10 h-10"></i>
+                    </div>
+                    <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto -mt-10 mb-4 font-black border-4 border-white dark:border-slate-800 relative z-10">3</div>
+                    <h4 class="font-black text-xl text-slate-800 dark:text-white mb-3">Jual Massal</h4>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">Gudang Dayah mengumpulkan dalam skala besar (ton) lalu menjual ke pabrik/pengepul besar dengan harga terbaik.</p>
+                </div>
+                <!-- Step 4 -->
+                <div class="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-slate-700 text-center relative group hover:-translate-y-2 transition-transform duration-300">
+                    <div class="w-20 h-20 bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-sm border border-amber-100 dark:border-amber-800/50 group-hover:scale-110 transition-transform">
+                        <i data-lucide="coins" class="w-10 h-10"></i>
+                    </div>
+                    <div class="w-8 h-8 bg-amber-500 text-white rounded-full flex items-center justify-center mx-auto -mt-10 mb-4 font-black border-4 border-white dark:border-slate-800 relative z-10">4</div>
+                    <h4 class="font-black text-xl text-slate-800 dark:text-white mb-3">Distribusi Berkah</h4>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">Hasil penjualan dibagi adil secara otomatis: Kas Dayah, Poin Hak Santri (Voucher), dan Fee Manajemen Sistem.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Klasemen Publik -->
+        <div class="bg-slate-900 dark:bg-slate-950 py-24 mt-10 relative overflow-hidden">
+            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==')]"></div>
+            <div class="max-w-4xl mx-auto px-5 relative z-10">
+                <div class="text-center mb-12">
+                    <div class="inline-block p-4 bg-yellow-500/20 rounded-full mb-6">
+                        <i data-lucide="medal" class="w-12 h-12 text-yellow-400"></i>
+                    </div>
+                    <h2 class="text-3xl md:text-5xl font-black text-white mb-4">Eco Dayah Index</h2>
+                    <p class="text-slate-400 font-medium text-lg">Peringkat Asrama Terbersih & Teraktif (Top 3)</p>
+                </div>
+                <div class="bg-slate-800/80 backdrop-blur-md rounded-[2rem] p-4 md:p-8 shadow-2xl border border-slate-700/50">
+                    <ul class="divide-y divide-slate-700/50" id="lp-klasemen-list">
+                        <!-- Top 3 di-render via JS -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-slate-950 text-slate-400 py-12 border-t border-slate-900">
+            <div class="max-w-7xl mx-auto px-5 flex flex-col items-center">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="bg-emerald-600 p-2 rounded-lg"><i data-lucide="leaf" class="w-5 h-5 text-white"></i></div>
+                    <span class="font-black text-2xl text-white">Nazif<span class="text-emerald-500">.</span></span>
+                </div>
+                <p class="text-sm font-medium text-center mb-8 max-w-md">Sistem Informasi Tata Kelola Sampah Pesantren. Mendukung terciptanya ekonomi sirkular dan lingkungan islami yang bersih.</p>
+                <div class="w-full border-t border-slate-800 pt-8 text-center flex flex-col md:flex-row justify-between items-center text-xs font-semibold tracking-wider">
+                    <p>© 2026 Nazif System. Hak Cipta Dilindungi.</p>
+                    <div class="flex gap-4 mt-4 md:mt-0">
+                        <a href="#" class="hover:text-emerald-400 transition-colors">Tentang Kami</a>
+                        <a href="#" class="hover:text-emerald-400 transition-colors">Panduan Sistem</a>
+                        <a href="#" class="hover:text-emerald-400 transition-colors">Privasi</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ==================== LOGIN SCREEN (MULTI-ROLE) ==================== -->
+    <div id="login-screen" class="fixed inset-0 bg-slate-50 dark:bg-slate-900 z-[250] flex flex-col items-center justify-center p-5 transform translate-y-full transition-transform duration-500">
+        
+        <button onclick="showLandingPage()" class="absolute top-6 left-6 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center gap-2 font-bold bg-white dark:bg-slate-800 px-5 py-2.5 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 transition-all hover:-translate-x-1">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali
+        </button>
+
+        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 md:p-10 rounded-[2.5rem] w-full max-w-md shadow-2xl relative z-10 animate-slide-up">
+            <div class="text-center mb-10">
+                <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/30 transform rotate-3">
+                    <i data-lucide="shield-check" class="w-10 h-10 text-white -rotate-3"></i>
+                </div>
+                <h1 class="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Login Portal</h1>
+                <p class="text-slate-500 dark:text-slate-400 text-sm mt-2 font-medium">Sistem Internal Pengelola Nazif</p>
+            </div>
+
+            <form class="space-y-6" onsubmit="event.preventDefault(); processLogin();">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 ml-1">Username Akses</label>
+                    <div class="relative">
+                        <i data-lucide="user" class="absolute left-4 top-4 w-5 h-5 text-slate-400"></i>
+                        <input type="text" id="login-user" required class="w-full pl-12 pr-5 py-4 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-slate-800 dark:text-white focus:border-emerald-500 outline-none font-bold transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600" placeholder="Masukkan username">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 ml-1">Kata Sandi</label>
+                    <div class="relative">
+                        <i data-lucide="lock" class="absolute left-4 top-4 w-5 h-5 text-slate-400"></i>
+                        <input type="password" id="login-pass" required class="w-full pl-12 pr-5 py-4 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-slate-800 dark:text-white focus:border-emerald-500 outline-none font-bold transition-all placeholder:text-slate-300 dark:placeholder:text-slate-600" placeholder="••••••••">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black text-lg py-4 rounded-2xl shadow-lg shadow-emerald-600/30 mt-4 active:scale-[0.98] transition-all flex justify-center items-center gap-2">
+                    Otorisasi Akses <i data-lucide="log-in" class="w-5 h-5"></i>
+                </button>
+            </form>
+            
+            <p class="text-center text-xs text-slate-400 mt-8 font-medium">Lupa kata sandi? Hubungi Administrator sistem Anda.</p>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN APP CONTAINER (DASHBOARD) ==================== -->
+    <div id="app-container" class="fixed inset-0 flex h-full w-full z-[100] transform translate-y-full transition-transform duration-500 bg-slate-50 dark:bg-slate-900">
+        
+        <!-- SIDEBAR (DESKTOP) -->
+        <aside class="w-72 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col justify-between hidden md:flex flex-shrink-0 transition-colors duration-300 z-20">
+            <div>
+                <!-- Brand Identity -->
+                <div class="h-24 flex items-center px-8 border-b border-slate-100 dark:border-slate-700 bg-emerald-600 dark:bg-slate-900 text-white">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-white/20 p-2 rounded-xl"><i data-lucide="leaf" class="w-6 h-6"></i></div>
+                        <div>
+                            <span class="font-black text-2xl tracking-tight leading-none block">Nazif<span class="text-emerald-300 dark:text-emerald-500">.</span></span>
+                            <span class="text-[9px] font-bold uppercase tracking-widest text-emerald-100 dark:text-slate-400">Eco Dayah System</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation List (RBAC Applied) -->
+                <div class="px-5 py-8 space-y-8 overflow-y-auto max-h-[calc(100vh-180px)] hide-scrollbar">
+                    
+                    <div data-roles="admin,pimpinan,bendahara" class="menu-group">
+                        <p class="px-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Pimpinan & Ringkasan</p>
+                        <nav class="space-y-1">
+                            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-sm font-bold rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all">
+                                <i data-lucide="layout-dashboard" class="w-5 h-5 text-emerald-500"></i> Dashboard Eksekutif
+                            </button>
+                        </nav>
+                    </div>
+
+                    <div data-roles="admin,operator,pimpinan" class="menu-group">
+                        <p class="px-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Operasional Bank Sampah</p>
+                        <nav class="space-y-1">
+                            <button data-roles="admin,operator" onclick="switchTab('pos')" id="nav-pos" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-sm font-bold rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all">
+                                <i data-lucide="arrow-down-to-line" class="w-5 h-5 text-emerald-500"></i> POS Setor Asrama
+                            </button>
+                            <button onclick="switchTab('gudang')" id="nav-gudang" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-sm font-bold rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all">
+                                <i data-lucide="package" class="w-5 h-5 text-amber-500"></i> Stok Gudang Dayah
+                            </button>
+                        </nav>
+                    </div>
+
+                    <div data-roles="admin,bendahara,pimpinan" class="menu-group">
+                        <p class="px-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Keuangan & Sirkular</p>
+                        <nav class="space-y-1">
+                            <button data-roles="admin,bendahara" onclick="switchTab('penjualan')" id="nav-penjualan" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-sm font-bold rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all">
+                                <i data-lucide="truck" class="w-5 h-5 text-blue-500"></i> Penjualan (Pengepul)
+                            </button>
+                            <button onclick="switchTab('tabungan')" id="nav-tabungan" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-sm font-bold rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all">
+                                <i data-lucide="wallet" class="w-5 h-5 text-purple-500"></i> Tabungan / Voucher
+                            </button>
+                        </nav>
+                    </div>
+
+                    <div data-roles="admin,pimpinan,operator,bendahara,musyrif" class="menu-group">
+                        <p class="px-3 text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">Publik / Umum</p>
+                        <nav class="space-y-1">
+                            <button onclick="switchTab('klasemen')" id="nav-klasemen" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-sm font-bold rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all">
+                                <i data-lucide="medal" class="w-5 h-5 text-yellow-500"></i> Klasemen & Index
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Profile & Settings -->
+            <div class="p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+                <button onclick="switchTab('pengaturan')" id="nav-pengaturan" class="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group border border-transparent hover:border-slate-200 dark:hover:border-slate-600">
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-slate-200 to-slate-300 dark:from-slate-600 dark:to-slate-700 flex items-center justify-center text-slate-700 dark:text-white font-black shadow-inner flex-shrink-0" id="user-initial">
+                            U
+                        </div>
+                        <div class="flex-1 min-w-0 text-left">
+                            <p class="text-sm font-bold text-slate-900 dark:text-white truncate" id="user-name">User</p>
+                            <p class="text-[10px] text-emerald-600 dark:text-emerald-400 font-black uppercase tracking-wider truncate" id="user-role">Role</p>
+                        </div>
+                    </div>
+                    <i data-lucide="settings" class="w-5 h-5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-200 transition-colors"></i>
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+            
+            <!-- Header Mobile -->
+            <header class="md:hidden h-16 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-5 z-10 shadow-sm flex-shrink-0">
+                <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-500">
+                    <i data-lucide="leaf" class="w-6 h-6"></i>
+                    <span class="font-black text-xl tracking-tight text-slate-800 dark:text-white">Nazif</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-xs" id="mob-user-initial" onclick="switchTab('pengaturan')">U</div>
+                </div>
+            </header>
+
+            <!-- Header Desktop -->
+            <header class="hidden md:flex h-24 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 items-end pb-6 px-10 z-10 flex-shrink-0 transition-colors duration-300">
+                <div class="flex justify-between items-end w-full">
+                    <div>
+                        <h2 class="font-black text-3xl text-slate-800 dark:text-white tracking-tight" id="headerTitle">Dashboard</h2>
+                        <p class="text-slate-500 dark:text-slate-400 font-medium mt-1" id="headerSubtitle">Ikhtisar sistem informasi tata kelola sampah pesantren.</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <!-- Indikator Sync -->
+                        <div class="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 cursor-pointer shadow-sm hover:shadow transition-all" id="sync-status" onclick="pullDataFromGAS()" title="Klik untuk Sinkronisasi Manual">
+                            <div class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" id="sync-dot"></div>
+                            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest" id="sync-text">Standby</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- SCROLLABLE CONTENT AREA -->
+            <div class="flex-1 overflow-y-auto p-5 md:p-10 relative bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+                
+                <!-- TAB 1: DASHBOARD -->
+                <section id="tab-dashboard" class="tab-content block max-w-7xl mx-auto space-y-8 animate-fade-in">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Kas Dayah -->
+                        <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-8 rounded-[2rem] shadow-xl shadow-emerald-500/20 text-white relative overflow-hidden group">
+                            <div class="absolute -right-6 -bottom-6 opacity-20 transition-transform group-hover:scale-110"><i data-lucide="landmark" class="w-40 h-40"></i></div>
+                            <p class="text-xs font-black text-emerald-100 uppercase tracking-widest mb-3 relative z-10">Kas Bersih Dayah</p>
+                            <h3 class="text-3xl lg:text-4xl font-black mb-3 relative z-10 tracking-tight" id="dash-kas">Rp 0</h3>
+                            <p class="text-xs bg-black/20 inline-block px-3 py-1.5 rounded-lg font-bold relative z-10">Dari Penjualan</p>
+                        </div>
+                        <!-- Poin Asrama -->
+                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-[2rem] shadow-sm relative overflow-hidden group hover:border-blue-300 dark:hover:border-blue-700 transition-colors">
+                            <div class="absolute right-0 top-0 bg-blue-50 dark:bg-blue-900/30 p-6 rounded-bl-[2.5rem] transition-transform group-hover:scale-110"><i data-lucide="wallet" class="w-8 h-8 text-blue-500"></i></div>
+                            <p class="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Poin Asrama</p>
+                            <h3 class="text-3xl lg:text-4xl font-black text-slate-800 dark:text-white mb-3 tracking-tight" id="dash-saldo">Rp 0</h3>
+                            <p class="text-xs text-blue-600 font-bold bg-blue-50 dark:bg-blue-900/30 inline-block px-3 py-1.5 rounded-lg">Belum Dicairkan</p>
+                        </div>
+                        <!-- Stok Gudang -->
+                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-[2rem] shadow-sm relative overflow-hidden group hover:border-amber-300 dark:hover:border-amber-700 transition-colors">
+                            <div class="absolute right-0 top-0 bg-amber-50 dark:bg-amber-900/30 p-6 rounded-bl-[2.5rem] transition-transform group-hover:scale-110"><i data-lucide="package" class="w-8 h-8 text-amber-500"></i></div>
+                            <p class="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Stok Gudang Aktif</p>
+                            <h3 class="text-3xl lg:text-4xl font-black text-slate-800 dark:text-white mb-3 tracking-tight"><span id="dash-gudang">0</span> <span class="text-xl text-slate-400">Kg</span></h3>
+                            <p class="text-xs text-amber-600 font-bold bg-amber-50 dark:bg-amber-900/30 inline-block px-3 py-1.5 rounded-lg">Siap Dijual</p>
+                        </div>
+                        <!-- Total Diselamatkan -->
+                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-[2rem] shadow-sm relative overflow-hidden group hover:border-rose-300 dark:hover:border-rose-700 transition-colors">
+                            <div class="absolute right-0 top-0 bg-rose-50 dark:bg-rose-900/30 p-6 rounded-bl-[2.5rem] transition-transform group-hover:scale-110"><i data-lucide="recycle" class="w-8 h-8 text-rose-500"></i></div>
+                            <p class="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Total Diselamatkan</p>
+                            <h3 class="text-3xl lg:text-4xl font-black text-slate-800 dark:text-white mb-3 tracking-tight"><span id="dash-total">0</span> <span class="text-xl text-slate-400">Kg</span></h3>
+                            <p class="text-xs text-rose-600 font-bold bg-rose-50 dark:bg-rose-900/30 inline-block px-3 py-1.5 rounded-lg">Akumulasi Historis</p>
+                        </div>
+                    </div>
+
+                    <!-- Skema Margin Table -->
+                    <div class="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+                        <div class="p-8 border-b border-slate-100 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <h3 class="font-black text-xl text-slate-800 dark:text-white">Skema Margin Nazif (Per Kg)</h3>
+                                <p class="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">Transparansi pembagian nilai jual komoditas Bank Sampah.</p>
+                            </div>
+                            <div class="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 text-xs font-bold px-4 py-2 rounded-xl">Data Statis</div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+                                    <tr>
+                                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest">Kategori</th>
+                                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest">Poin Santri</th>
+                                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest">Kas Dayah</th>
+                                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-widest">Fee Sistem</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50" id="tabelHargaMargin">
+                                    <!-- Rendered via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 2: POS SETOR -->
+                <section id="tab-pos" class="tab-content hidden max-w-4xl mx-auto space-y-6 animate-fade-in">
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-sm p-8 md:p-12 relative overflow-hidden">
+                        <div class="absolute -top-32 -right-32 w-96 h-96 bg-emerald-50 dark:bg-emerald-900/10 rounded-full blur-3xl pointer-events-none"></div>
+                        
+                        <form id="formPOS" class="space-y-8 relative z-10" onsubmit="event.preventDefault(); submitPOS();">
+                            <div>
+                                <label class="block text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Sumber / Asrama</label>
+                                <select id="pos-asrama" required class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-600 rounded-2xl text-base font-bold focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 outline-none transition-colors cursor-pointer text-slate-800 dark:text-white appearance-none relative">
+                                    <option value="" disabled selected>-- Memuat Data Asrama --</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Kategori Komoditas (Pilih Salah Satu)</label>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="pos-kategori"></div>
+                            </div>
+
+                            <div class="grid md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/50 p-6 md:p-8 rounded-3xl border border-slate-100 dark:border-slate-700">
+                                <div>
+                                    <label class="block text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Berat Timbangan</label>
+                                    <div class="relative">
+                                        <input type="number" id="pos-berat" step="0.1" required class="w-full pl-6 pr-16 py-5 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl text-4xl font-black text-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-colors placeholder:text-slate-300 dark:placeholder:text-slate-600 shadow-sm" placeholder="0.0">
+                                        <span class="absolute inset-y-0 right-0 pr-6 flex items-center pointer-events-none text-xl font-bold text-slate-400">Kg</span>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col justify-end">
+                                    <label class="block text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Estimasi Hak Santri</label>
+                                    <div class="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl h-[86px] flex items-center px-6 shadow-sm transition-colors" id="pos-box-estimasi">
+                                        <span id="pos-estimasi" class="text-3xl font-black text-blue-600 dark:text-blue-400 truncate">Rp 0</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl p-6 transition-all duration-300 hover:border-emerald-200 dark:hover:border-emerald-800" id="pos-box-sedekah">
+                                <label class="flex items-start gap-4 cursor-pointer group">
+                                    <div class="flex items-center h-6 mt-1">
+                                        <input type="checkbox" id="pos-sedekah" class="w-6 h-6 border-2 border-slate-300 rounded-md text-emerald-600 focus:ring-emerald-600 cursor-pointer">
+                                    </div>
+                                    <div class="flex-1">
+                                        <span class="font-bold text-lg text-slate-800 dark:text-white flex items-center gap-2 group-hover:text-emerald-600 transition-colors">Jadikan Sedekah Jariyah <i data-lucide="mosque" class="w-5 h-5 text-emerald-600"></i></span>
+                                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5 font-medium leading-relaxed">Hak poin santri menjadi Rp 0, dan 100% margin dialihkan ke kas Dayah (Poin klasemen tetap dihitung).</p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <button type="submit" class="w-full flex justify-center items-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-lg py-5 px-8 rounded-2xl transition-all shadow-lg shadow-emerald-600/30 active:scale-[0.98]">
+                                <i data-lucide="hard-drive-upload" class="w-6 h-6"></i> Simpan Transaksi
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- TAB 3: GUDANG -->
+                <section id="tab-gudang" class="tab-content hidden max-w-5xl mx-auto space-y-6 animate-fade-in">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="gudang-cards">
+                        <!-- Rendered via JS -->
+                    </div>
+                </section>
+
+                <!-- TAB 4: PENJUALAN -->
+                <section id="tab-penjualan" class="tab-content hidden max-w-4xl mx-auto space-y-6 animate-fade-in">
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-sm p-8 md:p-12">
+                        <h2 class="text-2xl font-black text-slate-800 dark:text-white mb-2">Form Pencairan Gudang</h2>
+                        <p class="text-slate-500 dark:text-slate-400 mb-8 border-b border-slate-100 dark:border-slate-700 pb-6 font-medium">Ubah stok gudang menjadi uang kas Dayah yang nyata.</p>
+                        
+                        <form id="formPenjualan" class="space-y-8" onsubmit="event.preventDefault(); submitPenjualan();">
+                            <div>
+                                <label class="block text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Pilih Komoditas Dijual</label>
+                                <select id="jual-kategori" required onchange="updateJualMax()" class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-600 rounded-2xl outline-none font-bold focus:border-blue-500 cursor-pointer text-slate-800 dark:text-white appearance-none"></select>
+                            </div>
+                            <div class="grid md:grid-cols-2 gap-6 bg-slate-50 dark:bg-slate-900/50 p-6 md:p-8 rounded-3xl border border-slate-100 dark:border-slate-700">
+                                <div>
+                                    <label class="block text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Berat Keluar (Kg)</label>
+                                    <div class="relative">
+                                        <input type="number" id="jual-berat" step="0.1" required class="w-full pl-5 pr-16 py-4 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl text-3xl font-black outline-none focus:border-blue-500 placeholder:text-slate-300 dark:text-white">
+                                        <span class="absolute inset-y-0 right-0 pr-5 flex items-center text-lg font-bold text-slate-400">Kg</span>
+                                    </div>
+                                    <p id="jual-max-info" class="text-xs font-bold text-blue-500 mt-3 bg-blue-50 dark:bg-blue-900/30 inline-block px-3 py-1.5 rounded-lg">Stok Tersedia: 0 Kg</p>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Total Harga Deal (Rp)</label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-5 flex items-center text-xl font-bold text-slate-400">Rp</span>
+                                        <input type="number" id="jual-harga" required class="w-full pl-14 pr-5 py-4 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl text-3xl font-black outline-none focus:border-blue-500 dark:text-white">
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Pengepul / Pembeli</label>
+                                <input type="text" id="jual-pembeli" required class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-600 rounded-2xl outline-none font-bold focus:border-blue-500 text-slate-800 dark:text-white" placeholder="Nama Perusahaan / Pengepul">
+                            </div>
+                            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black text-lg py-5 rounded-2xl shadow-lg shadow-blue-600/30 transition-transform active:scale-[0.98]">Konfirmasi Penjualan & Tambah Kas</button>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- TAB 5: TABUNGAN -->
+                <section id="tab-tabungan" class="tab-content hidden max-w-5xl mx-auto space-y-6 animate-fade-in">
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] overflow-hidden shadow-sm">
+                        <div class="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700">
+                             <h3 class="font-black text-xl text-slate-800 dark:text-white">Buku Tabungan Asrama</h3>
+                             <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">Pencairan poin menjadi voucher belanja koperasi.</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700 text-[11px] font-black text-slate-500 uppercase tracking-widest">
+                                    <tr><th class="px-8 py-5">Nama Asrama</th><th class="px-8 py-5 text-right">Saldo Saat Ini</th><th class="px-8 py-5 text-center">Aksi Pencairan</th></tr>
+                                </thead>
+                                <tbody id="tabungan-body" class="divide-y divide-slate-100 dark:divide-slate-700/50"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 6: KLASEMEN -->
+                <section id="tab-klasemen" class="tab-content hidden max-w-4xl mx-auto space-y-8 animate-fade-in">
+                    <div class="text-center mb-10">
+                        <div class="inline-block p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-full mb-4">
+                            <i data-lucide="medal" class="w-12 h-12 text-yellow-500"></i>
+                        </div>
+                        <h2 class="text-4xl font-black text-slate-800 dark:text-white">Eco Dayah Index</h2>
+                        <p class="text-slate-500 font-medium mt-2">Peringkat berdasarkan akumulasi Poin Prestasi & Sedekah.</p>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-sm overflow-hidden p-4 md:p-6">
+                        <ul class="divide-y divide-slate-50 dark:divide-slate-700/50" id="klasemen-list"></ul>
+                    </div>
+                </section>
+
+                <!-- TAB 7: PENGATURAN (MASTER, USERS, API, PASSWORD) -->
+                <section id="tab-pengaturan" class="tab-content hidden max-w-5xl mx-auto space-y-8 animate-fade-in">
+                    
+                    <!-- Area Admin: Integrasi & Profil -->
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Integrasi GAS -->
+                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-[2rem] shadow-sm relative overflow-hidden group">
+                            <div class="absolute -right-10 -bottom-10 opacity-5 group-hover:opacity-10 transition-opacity"><i data-lucide="database" class="w-48 h-48"></i></div>
+                            <h3 class="font-black text-xl mb-6 flex items-center gap-3 text-slate-800 dark:text-white"><div class="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg"><i data-lucide="database" class="w-5 h-5 text-emerald-500"></i></div> Backend Database</h3>
+                            <div class="flex flex-col gap-4 relative z-10">
+                                <label class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">URL Apps Script (Web App)</label>
+                                <input type="url" id="setting-gas-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-5 py-4 bg-slate-50 dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-600 rounded-xl outline-none font-medium focus:border-emerald-500 text-slate-800 dark:text-white">
+                                <button onclick="saveGasUrl()" class="w-full bg-slate-800 hover:bg-slate-900 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 text-white py-4 rounded-xl font-bold transition-colors shadow-md">Simpan Konfigurasi & Sync</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Profil & Keamanan -->
+                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-[2rem] shadow-sm">
+                            <h3 class="font-black text-xl mb-6 flex items-center gap-3 text-slate-800 dark:text-white"><div class="p-2 bg-amber-50 dark:bg-amber-900/30 rounded-lg"><i data-lucide="shield" class="w-5 h-5 text-amber-500"></i></div> Profil Keamanan</h3>
+                            <div class="flex flex-col gap-4">
+                                <div class="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700 mb-2">
+                                    <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mb-1">Akun Aktif</p>
+                                    <p class="font-bold text-lg text-slate-800 dark:text-white" id="setting-my-name">-</p>
+                                </div>
+                                <button onclick="promptResetPassword('self')" class="bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-white py-4 rounded-xl font-bold transition-colors border-2 border-slate-200 dark:border-slate-600 flex justify-center items-center gap-2 shadow-sm">
+                                    <i data-lucide="key" class="w-4 h-4"></i> Ubah Kata Sandi Saya
+                                </button>
+                                <button onclick="logout()" class="bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 py-4 rounded-xl font-bold transition-colors flex justify-center items-center gap-2 border border-transparent">
+                                    <i data-lucide="log-out" class="w-4 h-4"></i> Keluar Sistem
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Area Master Data (Khusus Admin) -->
+                    <div data-roles="admin" class="grid lg:grid-cols-2 gap-6 role-hidden pt-8 border-t border-slate-200 dark:border-slate-700">
+                        
+                        <!-- Master Asrama -->
+                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-sm flex flex-col h-[550px] overflow-hidden">
+                            <div class="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30">
+                                <h3 class="font-black text-xl text-slate-800 dark:text-white flex items-center gap-3"><div class="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg"><i data-lucide="home" class="w-5 h-5 text-indigo-500"></i></div> Master Asrama</h3>
+                                <span class="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-3 py-1 rounded-full text-xs font-bold" id="count-asrama">0</span>
+                            </div>
+                            <div class="p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                <form onsubmit="event.preventDefault(); tambahAsrama();" class="flex gap-3">
+                                    <input type="text" id="master-nama-asrama" required placeholder="Ketik nama asrama baru..." class="flex-1 px-5 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-indigo-500 font-bold text-slate-800 dark:text-white">
+                                    <button type="submit" class="bg-indigo-600 text-white px-6 rounded-xl font-bold hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-95 transition-transform"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                                </form>
+                            </div>
+                            <div class="flex-1 overflow-y-auto p-2 bg-slate-50/30 dark:bg-slate-900/10">
+                                <ul id="master-asrama-body" class="divide-y divide-slate-100 dark:divide-slate-700/50"></ul>
+                            </div>
+                        </div>
+
+                        <!-- Manajemen Akun -->
+                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-sm flex flex-col h-[550px] overflow-hidden">
+                            <div class="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex justify-between items-center">
+                                <h3 class="font-black text-xl text-slate-800 dark:text-white flex items-center gap-3"><div class="p-2 bg-rose-50 dark:bg-rose-900/30 rounded-lg"><i data-lucide="users-2" class="w-5 h-5 text-rose-500"></i></div> Manajemen Pengguna</h3>
+                            </div>
+                            <div class="p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                <form onsubmit="event.preventDefault(); tambahUser();" class="flex flex-col gap-3">
+                                    <div class="flex gap-3">
+                                        <input type="text" id="add-user-username" required placeholder="Username" class="w-1/2 px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-rose-500 font-bold text-sm text-slate-800 dark:text-white">
+                                        <input type="password" id="add-user-pass" required placeholder="Password" class="w-1/2 px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-rose-500 font-bold text-sm text-slate-800 dark:text-white">
+                                    </div>
+                                    <div class="flex gap-3">
+                                        <input type="text" id="add-user-name" required placeholder="Nama Lengkap" class="flex-1 px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-rose-500 font-bold text-sm text-slate-800 dark:text-white">
+                                        <select id="add-user-role" class="w-1/3 px-3 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-rose-500 font-black text-xs cursor-pointer text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                            <option value="operator">Operator POS</option>
+                                            <option value="bendahara">Bendahara</option>
+                                            <option value="musyrif">Wali Asrama</option>
+                                            <option value="pimpinan">Pimpinan</option>
+                                            <option value="admin">Administrator</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="w-full bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white px-4 py-3.5 rounded-xl font-bold shadow-md mt-2 transition-colors">Buat Akun Baru</button>
+                                </form>
+                            </div>
+                            <div class="flex-1 overflow-y-auto p-2 bg-slate-50/30 dark:bg-slate-900/10">
+                                <ul id="user-management-body" class="divide-y divide-slate-100 dark:divide-slate-700/50"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="h-24 md:hidden"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Mobile Bottom Nav -->
+    <nav class="md:hidden fixed bottom-0 w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border-t border-slate-200 dark:border-slate-700 px-6 py-2 flex justify-between items-center z-[120] hidden pb-safe shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]" id="mobile-nav">
+        <button onclick="switchTab('dashboard')" class="flex flex-col items-center gap-1 w-16 text-slate-400 hover:text-emerald-600 transition-colors role-hidden" data-roles="admin,pimpinan,bendahara">
+            <i data-lucide="layout-dashboard" class="w-6 h-6"></i><span class="text-[10px] font-bold">Ringkasan</span>
+        </button>
+        <button onclick="switchTab('pos')" class="flex flex-col items-center gap-1 w-16 relative -top-5 role-hidden group" data-roles="admin,operator">
+            <div class="bg-emerald-600 text-white p-4 rounded-full shadow-lg shadow-emerald-500/40 border-4 border-white dark:border-slate-800 transition-transform active:scale-95 group-hover:bg-emerald-700"><i data-lucide="plus" class="w-6 h-6 stroke-[3]"></i></div>
+            <span class="text-[10px] font-bold mt-1 text-slate-500">Setor POS</span>
+        </button>
+        <button onclick="switchTab('klasemen')" class="flex flex-col items-center gap-1 w-16 text-slate-400 hover:text-yellow-500 transition-colors role-hidden" data-roles="admin,pimpinan,operator,bendahara,musyrif">
+            <i data-lucide="medal" class="w-6 h-6"></i><span class="text-[10px] font-bold">Klasemen</span>
+        </button>
+    </nav>
+
+    <script>
+        // ----------------- UTILS & MODALS -----------------
+        const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
+
+        function toggleTheme() { 
+            document.documentElement.classList.toggle('dark'); 
+            lucide.createIcons();
+        }
+        
+        // Navigation Functions
+        function showLandingPage() {
+            document.getElementById('landing-page').style.transform = 'translateY(0)';
+            document.getElementById('login-screen').style.transform = 'translateY(100%)';
+            updateLandingStats();
+        }
+        
+        function showLoginScreen() {
+            document.getElementById('landing-page').style.transform = 'translateY(-100%)';
+            document.getElementById('login-screen').style.transform = 'translateY(0)';
+            // Fokus otomatis ke input username (dengan sedikit jeda untuk animasi)
+            setTimeout(() => { document.getElementById('login-user').focus(); }, 300);
+        }
+
+        // Custom Toast System (Notification)
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-emerald-600 text-white' : (type === 'error' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-white dark:bg-white dark:text-slate-900');
+            const icon = type === 'success' ? 'check-circle' : (type === 'error' ? 'alert-circle' : 'info');
+            
+            toast.className = `flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl animate-toast-in ${bg} font-bold tracking-wide`;
+            toast.innerHTML = `<i data-lucide="${icon}" class="w-5 h-5"></i><span class="text-sm">${message}</span>`;
+            
+            container.appendChild(toast);
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+                toast.style.opacity = '0';
+                toast.style.transition = 'all 0.4s ease';
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
+        }
+
+        // Custom Confirm/Input Modal System
+        let confirmActionCallback = null;
+        function showConfirmModal(title, message, isInput = false, inputLabel = '', inputType = 'number', actionCallback) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-message').innerText = message;
+            
+            const iconBg = document.getElementById('confirm-icon-bg');
+            const icon = document.getElementById('confirm-icon');
+            const actionBtn = document.getElementById('confirm-btn-action');
+            
+            // Icon Styling based on type
+            if(inputType === 'password') {
+                iconBg.className = 'w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-5 text-amber-500 shadow-inner';
+                icon.setAttribute('data-lucide', 'key');
+                actionBtn.className = 'flex-1 px-4 py-3.5 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-amber-600/30';
+            } else if (isInput) {
+                iconBg.className = 'w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mx-auto mb-5 text-blue-500 shadow-inner';
+                icon.setAttribute('data-lucide', 'edit-3');
+                actionBtn.className = 'flex-1 px-4 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-blue-600/30';
+            } else {
+                iconBg.className = 'w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-5 text-emerald-600 shadow-inner';
+                icon.setAttribute('data-lucide', 'help-circle');
+                actionBtn.className = 'flex-1 px-4 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors shadow-lg shadow-emerald-600/30';
+            }
+            lucide.createIcons();
+
+            const inputContainer = document.getElementById('confirm-input-container');
+            const inputVal = document.getElementById('confirm-input-value');
+            if (isInput) {
+                inputContainer.classList.remove('hidden');
+                document.getElementById('confirm-input-label').innerText = inputLabel;
+                inputVal.type = inputType;
+                inputVal.value = '';
+                setTimeout(() => inputVal.focus(), 100);
+            } else {
+                inputContainer.classList.add('hidden');
+            }
+
+            confirmActionCallback = () => {
+                if(isInput) {
+                    const val = inputType === 'number' ? parseFloat(inputVal.value) : inputVal.value;
+                    if(inputType === 'number' && (isNaN(val) || val <= 0)) return showToast("Nilai tidak valid", "error");
+                    if(inputType !== 'number' && !val.trim()) return showToast("Input tidak boleh kosong", "error");
+                    actionCallback(val);
+                } else {
+                    actionCallback();
+                }
+                closeConfirmModal();
+            };
+            
+            actionBtn.onclick = confirmActionCallback;
+
+            const modal = document.getElementById('confirm-modal');
+            const content = document.getElementById('confirm-content');
+            modal.classList.remove('modal-inactive');
+            modal.classList.add('modal-active');
+            content.classList.remove('modal-content-inactive');
+            content.classList.add('modal-content-active');
+        }
+
+        function closeConfirmModal() {
+            const modal = document.getElementById('confirm-modal');
+            const content = document.getElementById('confirm-content');
+            modal.classList.remove('modal-active');
+            modal.classList.add('modal-inactive');
+            content.classList.remove('modal-content-active');
+            content.classList.add('modal-content-inactive');
+            confirmActionCallback = null;
+        }
+
+        // ----------------- APP STATE & BUSINESS LOGIC -----------------
+        const STORAGE_KEY = 'nazif_v_final';
+        // Business Rules / Scheme Margin (Sesuai Business Plan)
+        const KATEGORI = {
+            'plastik': { nama: 'Plastik (PET/Gelas)', icon: 'cup-soda', rpSantri: 1000, rpDayah: 1500, rpNazif: 500, color: 'sky' },
+            'kardus':  { nama: 'Kertas / Kardus', icon: 'package-open', rpSantri: 700, rpDayah: 1000, rpNazif: 300, color: 'amber' },
+            'logam':   { nama: 'Logam / Besi', icon: 'server', rpSantri: 1500, rpDayah: 2000, rpNazif: 500, color: 'slate' },
+            'organik': { nama: 'Organik (Kompos)', icon: 'leafy-green', rpSantri: 0, rpDayah: 0, rpNazif: 0, color: 'emerald' }
+        };
+
+        // Data Inti Sistem
+        let appState = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
+            gasUrl: '',
+            kasDayah: 0,
+            gudang: { plastik: 0, kardus: 0, logam: 0, organik: 0 },
+            saldoAsrama: {},
+            historyMasuk: [],
+            historyKeluar: [],
+            daftarAsrama: [ { id: 1, nama: 'Asrama Umar bin Khattab' }, { id: 2, nama: 'Asrama Abu Bakar' } ],
+            users: [
+                // Akun default (Dapat diubah passwordnya di dalam sistem)
+                { id: 1, username: 'admin', password: '123', role: 'admin', name: 'Admin Master' },
+                { id: 2, username: 'operator', password: '123', role: 'operator', name: 'Ust. Operator' },
+                { id: 3, username: 'bendahara', password: '123', role: 'bendahara', name: 'Bendahara Dayah' },
+                { id: 4, username: 'pimpinan', password: '123', role: 'pimpinan', name: 'Tengku Pimpinan' }
+            ]
+        };
+
+        function saveState() { 
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState)); 
+        }
+
+        // Merekalkulasi seluruh state berdasar History (Single Source of Truth / Ledger System)
+        function recalculateStateFromHistory() {
+            appState.kasDayah = 0;
+            Object.keys(KATEGORI).forEach(k => appState.gudang[k] = 0);
+            appState.daftarAsrama.forEach(a => appState.saldoAsrama[a.nama] = 0);
+
+            // Hitung Uang & Gudang Masuk dari POS Setor
+            appState.historyMasuk.forEach(trx => {
+                if(!appState.saldoAsrama[trx.asrama]) appState.saldoAsrama[trx.asrama] = 0;
+                appState.saldoAsrama[trx.asrama] += trx.poinSantri;
+                
+                if(appState.gudang[trx.katId] !== undefined) appState.gudang[trx.katId] += trx.berat;
+                
+                appState.kasDayah += trx.marginDayah;
+            });
+
+            // Hitung Uang Masuk (Jual Gudang) & Uang Keluar (Tarik Voucher)
+            appState.historyKeluar.forEach(trx => {
+                if (trx.type === 'JUAL') {
+                    if(appState.gudang[trx.katId] !== undefined) appState.gudang[trx.katId] -= trx.berat;
+                    appState.kasDayah += trx.total;
+                } else if (trx.type === 'TARIK') {
+                    if(!appState.saldoAsrama[trx.asrama]) appState.saldoAsrama[trx.asrama] = 0;
+                    appState.saldoAsrama[trx.asrama] -= trx.jumlah;
+                }
+            });
+            
+            // Pencegahan floating point error (stok minus)
+            Object.keys(appState.gudang).forEach(k => { if(appState.gudang[k] < 0) appState.gudang[k] = 0; });
+        }
+
+        let currentUser = null;
+        let selectedKatPOS = 'plastik';
+
+        // ----------------- GAS API INTEGRATION (PUSH & PULL) -----------------
+        
+        function updateSyncStatus(status) {
+            const dot = document.getElementById('sync-dot');
+            const text = document.getElementById('sync-text');
+            if(!dot || !text) return; // Proteksi jika elemen tidak ada
+            
+            if(status === 'syncing') {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 animate-spin';
+                text.innerText = 'Syncing...';
+            } else if (status === 'success') {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';
+                text.innerText = 'Tersinkron';
+                setTimeout(() => updateSyncStatus('standby'), 4000);
+            } else if (status === 'error') {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500';
+                text.innerText = 'Error Sync';
+            } else {
+                dot.className = 'w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600';
+                text.innerText = 'Standby';
+            }
+        }
+
+        // POST (Kirim Data Baru)
+        async function pushDataToGAS(action, payloadData) {
+            if (!appState.gasUrl) return;
+            updateSyncStatus('syncing');
+            try {
+                payloadData.operator = currentUser ? currentUser.name : "System";
+                await fetch(appState.gasUrl, {
+                    method: 'POST',
+                    mode: 'no-cors', // Penting untuk Google Apps Script
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: action, data: payloadData })
+                });
+                updateSyncStatus('success');
+            } catch (err) {
+                console.error("Gagal PUSH ke GAS:", err);
+                updateSyncStatus('error');
+            }
+        }
+
+        // GET (Tarik Data Massal / Auto-Pull)
+        async function pullDataFromGAS(isSilent = false) {
+            if (!appState.gasUrl) return;
+            if(!isSilent) showToast("Menarik data dari server (GAS)...", "info");
+            updateSyncStatus('syncing');
+            
+            try {
+                const res = await fetch(appState.gasUrl);
+                const result = await res.json();
+                
+                if(result.status === 'success') {
+                    // Update History Database
+                    if(result.data.historyMasuk) appState.historyMasuk = result.data.historyMasuk;
+                    if(result.data.historyKeluar) appState.historyKeluar = result.data.historyKeluar;
+                    
+                    // Rekalkulasi Akuntansi (Gudang, Saldo, Kas)
+                    recalculateStateFromHistory();
+                    saveState();
+                    
+                    // Segarkan UI Aktif
+                    if(currentUser) {
+                        renderDashboard();
+                        renderGudang();
+                        renderTabungan();
+                        setupPenjualan();
+                        renderKlasemen('klasemen-list');
+                    } else {
+                        updateLandingStats();
+                    }
+                    
+                    updateSyncStatus('success');
+                    if(!isSilent) showToast("Database berhasil disinkronisasi!", "success");
+                }
+            } catch (err) {
+                console.error("Gagal PULL dari GAS:", err);
+                updateSyncStatus('error');
+                if(!isSilent) showToast("Gagal tarik data. Pastikan URL GAS benar.", "error");
+            }
+        }
+
+        function saveGasUrl() {
+            const url = document.getElementById('setting-gas-url').value.trim();
+            if(!url) return showToast("URL tidak boleh kosong", "error");
+            appState.gasUrl = url;
+            saveState();
+            showToast("Konfigurasi API tersimpan. Memulai Sync...");
+            pullDataFromGAS();
+        }
+
+        // ----------------- LOGIN & ROLE SYSTEM -----------------
+        function processLogin() {
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value;
+            
+            if(!u || !p) return showToast("Masukkan kredensial yang valid.", "error");
+
+            const user = appState.users.find(x => x.username === u && x.password === p);
+            if(user) {
+                doLogin(user); 
+            } else {
+                showToast("Akses Ditolak! Kredensial tidak valid.", "error");
+            }
+        }
+        
+        function doLogin(user) {
+            currentUser = user;
+            // Set Profil UI
+            document.getElementById('user-name').innerText = user.name;
+            document.getElementById('user-role').innerText = user.role;
+            const inisial = user.name.substring(0,2).toUpperCase();
+            document.getElementById('user-initial').innerText = inisial;
+            document.getElementById('mob-user-initial').innerText = inisial;
+            document.getElementById('setting-my-name').innerText = `${user.name} (${user.username})`;
+            
+            // Animasi Transisi Halaman
+            document.getElementById('login-screen').style.transform = 'translateY(100%)';
+            document.getElementById('app-container').style.transform = 'translateY(0)';
+            document.getElementById('mobile-nav').classList.remove('hidden');
+
+            // Terapkan RBAC (Role-Based Access Control) pada Menu Navigasi
+            document.querySelectorAll('[data-roles]').forEach(el => {
+                if (el.getAttribute('data-roles').split(',').includes(user.role)) {
+                    el.classList.remove('role-hidden');
+                } else {
+                    el.classList.add('role-hidden');
+                }
+            });
+            
+            // Routing tab pertama berdasarkan role
+            const roleTabs = { admin: 'dashboard', pimpinan: 'dashboard', operator: 'pos', bendahara: 'tabungan', musyrif: 'klasemen' };
+            switchTab(roleTabs[user.role] || 'dashboard');
+            
+            // Persiapan form pengaturan
+            document.getElementById('setting-gas-url').value = appState.gasUrl || '';
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('app-container').style.transform = 'translateY(100%)';
+            document.getElementById('mobile-nav').classList.add('hidden');
+            // Bersihkan form
+            document.getElementById('login-user').value = '';
+            document.getElementById('login-pass').value = '';
+            showLandingPage();
+        }
+
+        // ----------------- NAVIGATION -----------------
+        function switchTab(tabId) {
+            // Sembunyikan konten tab lain
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            
+            // --- Update UI Mobile Nav Active State ---
+            document.querySelectorAll('#mobile-nav button').forEach(b => {
+                b.classList.remove('text-emerald-600'); b.classList.add('text-slate-400');
+            });
+            const mobBtn = document.getElementById(`mob-${tabId}`);
+            if(mobBtn) { mobBtn.classList.add('text-emerald-600'); mobBtn.classList.remove('text-slate-400'); }
+
+            // Title Dinamis
+            const titleMap = { 
+                dashboard: ['Dashboard Eksekutif', 'Ikhtisar sistem informasi tata kelola sampah pesantren.'], 
+                pos: ['Pusat Penerimaan', 'Pencatatan setoran sampah sirkular dari Asrama.'], 
+                gudang: ['Stok Gudang', 'Manajemen inventaris komoditas bank sampah.'], 
+                penjualan: ['Pencairan Gudang', 'Ubah stok gudang menjadi uang kas nyata.'], 
+                tabungan: ['Buku Tabungan', 'Pencairan poin asrama menjadi voucher koperasi.'], 
+                klasemen: ['Eco Dayah Index', 'Peringkat asrama terbersih berdasarkan poin & sedekah.'], 
+                pengaturan: ['Pengaturan Sistem', 'Konfigurasi database, pengguna, dan keamanan.'] 
+            };
+            if(titleMap[tabId]) {
+                document.getElementById('headerTitle').innerText = titleMap[tabId][0];
+                document.getElementById('headerSubtitle').innerText = titleMap[tabId][1];
+            }
+
+            // Lazy Load Eksekusi (Hanya jalankan fungsi berat saat tab dibuka)
+            if(tabId === 'dashboard') { renderDashboard(); renderTabelMargin(); }
+            if(tabId === 'pos') { renderAsramaDropdown('pos-asrama'); renderKategoriPOS(); }
+            if(tabId === 'gudang') renderGudang();
+            if(tabId === 'penjualan') setupPenjualan();
+            if(tabId === 'tabungan') renderTabungan();
+            if(tabId === 'klasemen') renderKlasemen('klasemen-list');
+            if(tabId === 'pengaturan') { renderMasterAsrama(); renderUsers(); }
+        }
+
+        // ----------------- LANDING PAGE & DASHBOARD -----------------
+        function updateLandingStats() {
+            let totSaldo = Object.values(appState.saldoAsrama).reduce((a, b) => a + b, 0);
+            let totKg = appState.historyMasuk.reduce((a, b) => a + b.berat, 0);
+            
+            document.getElementById('lp-total-kg').innerText = totKg.toFixed(1);
+            document.getElementById('lp-kas-dayah').innerText = formatRp(appState.kasDayah);
+            document.getElementById('lp-poin-santri').innerText = formatRp(totSaldo);
+            renderKlasemen('lp-klasemen-list', true); // Hanya render top 3
+        }
+
+        function renderDashboard() {
+            let totSaldo = Object.values(appState.saldoAsrama).reduce((a, b) => a + b, 0);
+            let totKg = appState.historyMasuk.reduce((a, b) => a + b.berat, 0);
+            let totGudang = Object.values(appState.gudang).reduce((a,b)=>a+b,0);
+            
+            document.getElementById('dash-kas').innerText = formatRp(appState.kasDayah);
+            document.getElementById('dash-saldo').innerText = formatRp(totSaldo);
+            document.getElementById('dash-gudang').innerText = totGudang.toFixed(1);
+            document.getElementById('dash-total').innerText = totKg.toFixed(1);
+        }
+
+        function renderTabelMargin() {
+            const tb = document.getElementById('tabelHargaMargin');
+            tb.innerHTML = Object.keys(KATEGORI).map(k => {
+                const item = KATEGORI[k];
+                return `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <td class="px-8 py-4 flex items-center gap-3 font-bold text-slate-700 dark:text-slate-300">
+                        <div class="w-8 h-8 rounded-full bg-${item.color}-50 dark:bg-${item.color}-900/30 text-${item.color}-500 flex items-center justify-center"><i data-lucide="${item.icon}" class="w-4 h-4"></i></div>
+                        ${item.nama}
+                    </td>
+                    <td class="px-8 py-4 font-black text-blue-600 dark:text-blue-400">${item.rpSantri > 0 ? formatRp(item.rpSantri) : '-'}</td>
+                    <td class="px-8 py-4 font-black text-emerald-600 dark:text-emerald-400">${item.rpDayah > 0 ? formatRp(item.rpDayah) : '-'}</td>
+                    <td class="px-8 py-4 font-bold text-slate-400">${item.rpNazif > 0 ? formatRp(item.rpNazif) : '-'}</td>
+                </tr>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function renderKlasemen(elementId, isLanding = false) {
+            let rekap = {};
+            // Hitung poin prestasi (Sedekah tetap dihitung sebagai prestasi meskipun jadi Rp 0)
+            appState.historyMasuk.forEach(trx => {
+                if(!rekap[trx.asrama]) rekap[trx.asrama] = { nama: trx.asrama, poin: 0, kg: 0 };
+                rekap[trx.asrama].poin += trx.poinPrestasi; 
+                rekap[trx.asrama].kg += trx.berat; 
+            });
+            
+            // Urutkan berdasarkan poin tertinggi
+            let sorted = Object.values(rekap).sort((a,b) => b.poin - a.poin);
+            if(isLanding) sorted = sorted.slice(0, 3); // Landing page hanya butuh top 3
+
+            const list = document.getElementById(elementId);
+            list.innerHTML = sorted.map((asr, i) => `
+                <li class="p-5 md:p-6 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                    <div class="flex items-center gap-5">
+                        <div class="w-12 h-12 md:w-14 md:h-14 rounded-full ${i===0?'bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900 border-2 border-yellow-200 shadow-xl':(i===1?'bg-slate-200 text-slate-700 border-2 border-slate-300':(i===2?'bg-amber-600 text-amber-50 border-2 border-amber-500 shadow-md':'bg-slate-50 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 font-medium'))} flex items-center justify-center font-black text-xl md:text-2xl transition-transform group-hover:scale-110">${i+1}</div>
+                        <div>
+                            <span class="font-black text-lg md:text-xl block text-slate-800 dark:text-white tracking-tight">${asr.nama}</span>
+                            <span class="text-[11px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded mt-1 inline-block uppercase tracking-wider">${asr.kg.toFixed(1)} Kg Bersih</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-black text-emerald-600 dark:text-emerald-400 block text-2xl md:text-3xl">${formatRp(asr.poin)}</span>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 block">Poin Keaktifan</span>
+                    </div>
+                </li>`).join('');
+            
+            if(sorted.length === 0) list.innerHTML = `<li class="p-10 text-center text-slate-400 font-medium flex flex-col items-center"><i data-lucide="inbox" class="w-10 h-10 mb-3 opacity-50"></i> Belum ada data kompetisi.</li>`;
+            lucide.createIcons();
+        }
+
+        // ----------------- POS SETOR (OPERATOR) -----------------
+        function renderAsramaDropdown(elementId) {
+            const sel = document.getElementById(elementId);
+            if(appState.daftarAsrama && appState.daftarAsrama.length > 0){
+                sel.innerHTML = '<option value="" disabled selected>-- Pilih Asrama Penyetor --</option>' + 
+                                appState.daftarAsrama.map(a => `<option value="${a.nama}">${a.nama}</option>`).join('');
+            } else {
+                sel.innerHTML = '<option value="" disabled selected>-- Data Asrama Kosong --</option>';
+            }
+        }
+        
+        function renderKategoriPOS() {
+            const cont = document.getElementById('pos-kategori');
+            cont.innerHTML = Object.keys(KATEGORI).map(k => {
+                const c = KATEGORI[k]; const active = selectedKatPOS === k;
+                return `<div onclick="selectedKatPOS='${k}'; renderKategoriPOS(); calcPOS();" class="cursor-pointer border-2 rounded-2xl p-5 text-center transition-all duration-200 select-none group flex flex-col items-center justify-center gap-2 ${active ? `border-${c.color}-500 bg-${c.color}-50 dark:bg-${c.color}-900/40 shadow-sm` : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600'}">
+                    <div class="w-12 h-12 rounded-full ${active ? `bg-${c.color}-500 text-white shadow-md` : `bg-slate-100 dark:bg-slate-700 text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-slate-600`} flex items-center justify-center transition-transform ${active?'scale-110':''}"><i data-lucide="${c.icon}" class="w-6 h-6"></i></div>
+                    <span class="text-[11px] font-black uppercase tracking-wider leading-tight ${active ? `text-${c.color}-800 dark:text-${c.color}-300` : 'text-slate-500'}">${c.nama}</span>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function calcPOS() {
+            const b = parseFloat(document.getElementById('pos-berat').value) || 0;
+            const isSedekah = document.getElementById('pos-sedekah').checked;
+            
+            const estimasiEl = document.getElementById('pos-estimasi');
+            const boxEl = document.getElementById('pos-box-estimasi');
+            const sedekahBox = document.getElementById('pos-box-sedekah');
+
+            if(isSedekah) {
+                estimasiEl.innerText = 'Disumbangkan';
+                estimasiEl.className = 'text-xl font-bold text-emerald-600 dark:text-emerald-400 truncate';
+                boxEl.className = 'bg-emerald-50 dark:bg-emerald-900/30 border-2 border-emerald-200 dark:border-emerald-700 rounded-2xl h-[86px] flex items-center px-6 shadow-inner transition-colors';
+                sedekahBox.className = 'bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-500 rounded-2xl p-6 transition-all duration-300';
+            } else {
+                estimasiEl.innerText = formatRp(b * KATEGORI[selectedKatPOS].rpSantri);
+                estimasiEl.className = 'text-3xl font-black text-blue-600 dark:text-blue-400 truncate tracking-tight';
+                boxEl.className = 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl h-[86px] flex items-center px-6 shadow-sm transition-colors';
+                sedekahBox.className = 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl p-6 transition-all duration-300 hover:border-emerald-200 dark:hover:border-emerald-800';
+            }
+        }
+        
+        document.getElementById('pos-berat').addEventListener('input', calcPOS);
+        document.getElementById('pos-sedekah').addEventListener('change', calcPOS);
+        
+        function submitPOS() {
+            const asrama = document.getElementById('pos-asrama').value;
+            const berat = parseFloat(document.getElementById('pos-berat').value);
+            const isSedekah = document.getElementById('pos-sedekah').checked;
+            const katInfo = KATEGORI[selectedKatPOS];
+            
+            if(!asrama || isNaN(berat) || berat <= 0) return showToast("Data timbangan tidak lengkap/valid", "error");
+
+            const poinS = isSedekah ? 0 : (berat * katInfo.rpSantri);
+            // Margin dayah menyerap hak santri jika disedekahkan
+            const marDayah = isSedekah ? (berat * (katInfo.rpDayah + katInfo.rpSantri)) : (berat * katInfo.rpDayah);
+            
+            const payload = {
+                idTrx: 'IN-'+Date.now(), asrama: asrama, katId: selectedKatPOS, kategoriNama: katInfo.nama, 
+                berat: berat, isSedekah: isSedekah, poinSantri: poinS, poinPrestasi: (berat * katInfo.rpSantri), 
+                marginDayah: marDayah, feeNazif: (berat * katInfo.rpNazif)
+            };
+            
+            appState.historyMasuk.push(payload);
+            recalculateStateFromHistory(); // Rekalkulasi akuntansi instan
+            saveState(); 
+            
+            document.getElementById('formPOS').reset(); 
+            calcPOS();
+            showToast(`Sukses: ${berat}Kg dari ${asrama} telah dicatat.`);
+            
+            // Background Sync
+            pushDataToGAS('POST_SETOR', payload);
+        }
+
+        // ----------------- GUDANG & PENJUALAN -----------------
+        function renderGudang() {
+            const cont = document.getElementById('gudang-cards');
+            cont.innerHTML = Object.keys(appState.gudang).map(k => {
+                const c = KATEGORI[k];
+                return `<div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] p-8 shadow-sm text-center relative overflow-hidden group hover:border-${c.color}-300 transition-colors">
+                    <div class="absolute -right-6 -top-6 w-32 h-32 bg-${c.color}-50 dark:bg-${c.color}-900/20 rounded-full blur-2xl group-hover:scale-125 transition-transform pointer-events-none"></div>
+                    <div class="w-16 h-16 bg-${c.color}-100 dark:bg-${c.color}-900/40 text-${c.color}-600 rounded-full flex items-center justify-center mx-auto mb-5 relative z-10 border-4 border-white dark:border-slate-800 shadow-sm"><i data-lucide="${c.icon}" class="w-8 h-8"></i></div>
+                    <p class="font-bold text-slate-500 uppercase tracking-widest text-[10px] mb-2 relative z-10">${c.nama}</p>
+                    <h3 class="text-4xl font-black text-slate-800 dark:text-white relative z-10 tracking-tight">${appState.gudang[k].toFixed(1)} <span class="text-lg text-slate-400 font-bold">Kg</span></h3>
+                </div>`;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function setupPenjualan() {
+            const sel = document.getElementById('jual-kategori');
+            const available = Object.keys(appState.gudang).filter(k => appState.gudang[k] > 0);
+            
+            if(available.length > 0){
+                sel.innerHTML = '<option value="" disabled selected>-- Pilih Komoditas --</option>' + 
+                                available.map(k => `<option value="${k}">${KATEGORI[k].nama}</option>`).join('');
+            } else {
+                sel.innerHTML = '<option value="" disabled selected>-- Gudang Kosong --</option>';
+            }
+            document.getElementById('jual-max-info').innerText = "Pilih kategori untuk melihat stok";
+        }
+        
+        function updateJualMax() {
+            const k = document.getElementById('jual-kategori').value;
+            if(k) {
+                const stok = appState.gudang[k];
+                document.getElementById('jual-max-info').innerText = `Tersedia di Gudang: ${stok.toFixed(1)} Kg`;
+                document.getElementById('jual-berat').max = stok;
+            }
+        }
+        
+        function submitPenjualan() {
+            const k = document.getElementById('jual-kategori').value;
+            const b = parseFloat(document.getElementById('jual-berat').value);
+            const rp = parseFloat(document.getElementById('jual-harga').value);
+            const pengepul = document.getElementById('jual-pembeli').value;
+
+            if(!k || isNaN(b) || b <= 0 || b > appState.gudang[k]) return showToast("Stok gudang tidak mencukupi", "error");
+            
+            showConfirmModal("Cairkan Gudang", `Jual ${b}Kg ${KATEGORI[k].nama} seharga ${formatRp(rp)} ke ${pengepul}?`, false, '', 'number', () => {
+                const payload = { type: 'JUAL', katId: k, berat: b, total: rp, pengepul: pengepul };
+                appState.historyKeluar.push(payload);
+                recalculateStateFromHistory(); // Uang Kas Bertambah, Gudang Berkurang
+                saveState();
+                
+                document.getElementById('formPenjualan').reset();
+                setupPenjualan();
+                showToast("Pencairan Gudang Berhasil. Kas Bertambah!");
+                
+                pushDataToGAS('POST_JUAL', payload);
+            });
+        }
+
+        // ----------------- TABUNGAN (BENDAHARA) -----------------
+        function renderTabungan() {
+            const tb = document.getElementById('tabungan-body');
+            tb.innerHTML = '';
+            
+            const entries = Object.keys(appState.saldoAsrama).map(asrama => ({ name: asrama, saldo: appState.saldoAsrama[asrama] }));
+            
+            if(entries.length === 0) {
+                tb.innerHTML = `<tr><td colspan="3" class="p-10 text-center text-slate-400 font-medium">Belum ada data saldo asrama.</td></tr>`;
+                return;
+            }
+            
+            entries.sort((a,b) => b.saldo - a.saldo).forEach(entry => {
+                tb.innerHTML += `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                    <td class="px-8 py-6 font-black text-slate-800 dark:text-white text-base">${entry.name}</td>
+                    <td class="px-8 py-6 text-right font-black text-blue-600 text-2xl tracking-tight">${formatRp(entry.saldo)}</td>
+                    <td class="px-8 py-6 text-center">
+                        <button onclick="promptPencairan('${entry.name}', ${entry.saldo})" class="bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 text-blue-700 dark:text-blue-300 px-6 py-3 rounded-xl font-bold text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed group-hover:shadow" ${entry.saldo <= 0 ? 'disabled':''}>
+                            Cairkan Voucher
+                        </button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        function promptPencairan(asrama, maxSaldo) {
+            showConfirmModal("Pencairan Poin", `Terbitkan voucher koperasi untuk ${asrama}.\nMaksimal ditarik: ${formatRp(maxSaldo)}`, true, 'Nominal Voucher (Rp)', 'number', (jumlah) => {
+                if(jumlah > maxSaldo) return showToast("Saldo asrama tidak mencukupi!", "error");
+                
+                const payload = { type: 'TARIK', asrama: asrama, jumlah: jumlah };
+                appState.historyKeluar.push(payload);
+                recalculateStateFromHistory(); // Saldo Asrama Berkurang
+                saveState();
+                
+                renderTabungan();
+                showToast(`Voucher sebesar ${formatRp(jumlah)} berhasil diterbitkan.`);
+                
+                pushDataToGAS('POST_TARIK', payload);
+            });
+        }
+
+        // ----------------- PENGATURAN & MASTER DATA (ADMIN) -----------------
+        
+        function renderMasterAsrama() {
+            if(!appState.daftarAsrama) appState.daftarAsrama = []; // Fallback
+            document.getElementById('count-asrama').innerText = appState.daftarAsrama.length;
+            
+            const list = document.getElementById('master-asrama-body');
+            list.innerHTML = appState.daftarAsrama.map(a => `
+                <li class="p-5 flex justify-between items-center bg-white dark:bg-slate-800 mb-2 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm group">
+                    <span class="font-bold text-slate-700 dark:text-slate-300 text-base">${a.nama}</span>
+                    <button onclick="hapusAsrama(${a.id})" class="text-rose-400 hover:text-white hover:bg-rose-500 p-2.5 rounded-lg transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                </li>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function tambahAsrama() {
+            const nm = document.getElementById('master-nama-asrama').value.trim();
+            if(!nm) return;
+            if(appState.daftarAsrama.find(x => x.nama.toLowerCase() === nm.toLowerCase())) return showToast("Asrama sudah terdaftar", "error");
+            
+            appState.daftarAsrama.push({ id: Date.now(), nama: nm });
+            if(!appState.saldoAsrama[nm]) appState.saldoAsrama[nm] = 0; // Initialize saldo
+            saveState();
+            
+            document.getElementById('master-nama-asrama').value = '';
+            renderMasterAsrama();
+            showToast("Master asrama berhasil ditambahkan");
+        }
+
+        function hapusAsrama(id) {
+            showConfirmModal("Hapus Asrama", "Menghapus master asrama akan mempengaruhi daftar dropdown POS. Yakin?", false, '', 'number', () => {
+                appState.daftarAsrama = appState.daftarAsrama.filter(a => a.id !== id);
+                saveState();
+                renderMasterAsrama();
+                showToast("Asrama dihapus");
+            });
+        }
+
+        function renderUsers() {
+            const list = document.getElementById('user-management-body');
+            list.innerHTML = appState.users.map(u => `
+                <li class="p-5 flex justify-between items-center bg-white dark:bg-slate-800 mb-2 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm group">
+                    <div>
+                        <p class="font-black text-slate-800 dark:text-slate-200 text-lg">${u.username} <span class="text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full ml-2 uppercase tracking-widest align-middle">${u.role}</span></p>
+                        <p class="text-xs text-slate-500 mt-1 font-medium">${u.name}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="promptResetPassword(${u.id})" class="text-amber-500 hover:text-white hover:bg-amber-500 p-2.5 rounded-lg transition-colors border border-amber-100 dark:border-amber-900/50" title="Reset Password"><i data-lucide="key" class="w-4 h-4"></i></button>
+                        ${u.username !== 'admin' ? `<button onclick="hapusUser(${u.id})" class="text-rose-400 hover:text-white hover:bg-rose-500 p-2.5 rounded-lg transition-colors border border-rose-100 dark:border-rose-900/50" title="Cabut Akses"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                    </div>
+                </li>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function tambahUser() {
+            const u = document.getElementById('add-user-username').value.trim();
+            const p = document.getElementById('add-user-pass').value;
+            const n = document.getElementById('add-user-name').value.trim();
+            const r = document.getElementById('add-user-role').value;
+            
+            if(!u || !p || !n) return;
+            if(appState.users.find(x => x.username === u)) return showToast("Username sudah terpakai", "error");
+            
+            appState.users.push({ id: Date.now(), username: u, password: p, name: n, role: r });
+            saveState();
+            renderUsers();
+            
+            document.getElementById('add-user-username').value = '';
+            document.getElementById('add-user-pass').value = '';
+            document.getElementById('add-user-name').value = '';
+            showToast("Akun sistem berhasil dibuat");
+        }
+
+        function hapusUser(id) {
+            showConfirmModal("Cabut Akses", "Yakin menghapus hak akses pengguna ini dari sistem?", false, '', 'number', () => {
+                appState.users = appState.users.filter(u => u.id !== id);
+                saveState();
+                renderUsers();
+                showToast("Akses pengguna dihapus");
+            });
+        }
+
+        function promptResetPassword(userId) {
+            let userTarget;
+            if (userId === 'self') userTarget = currentUser;
+            else userTarget = appState.users.find(u => u.id === userId);
+
+            if(!userTarget) return;
+
+            showConfirmModal("Ganti Kata Sandi", `Masukkan kombinasi sandi baru untuk: ${userTarget.username}`, true, 'Password Baru (Min. 4 Karakter)', 'password', (newPass) => {
+                if(newPass.length < 4) return showToast("Password terlalu pendek", "error");
+                userTarget.password = newPass;
+                saveState();
+                if(userId === 'self') showToast("Password Anda berhasil diamankan!");
+                else showToast(`Sandi akun ${userTarget.username} berhasil direset!`);
+            });
+        }
+
+        // ----------------- INISIALISASI (BOOTSTRAP) -----------------
+        document.addEventListener('DOMContentLoaded', () => { 
+            lucide.createIcons();
+            
+            // Rekonstruksi data dari LocalStorage jika ada (Single Source of Truth)
+            if(!appState.daftarAsrama) appState.daftarAsrama = [ { id: 1, nama: 'Asrama Umar bin Khattab' } ];
+            recalculateStateFromHistory();
+            
+            // Auto Pull dari Server (Background Sync) saat aplikasi dimuat pertama kali
+            if(appState.gasUrl) {
+                pullDataFromGAS(true); // silent true
+            } else {
+                updateLandingStats(); 
+            }
+        });
+
+    </script>
+</body>
+</html>
