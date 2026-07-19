@@ -899,6 +899,12 @@
         // ----------------- APP STATE & BUSINESS LOGIC -----------------
         const STORAGE_KEY = 'nazif_v_final';
         
+        // === KONFIGURASI API GLOBAL (PENTING UNTUK MULTI-PERANGKAT) ===
+        // Masukkan URL Web App GAS Anda di dalam tanda kutip di bawah ini.
+        // Dengan menaruhnya di sini (sebelum di-push ke Github), semua HP/Laptop 
+        // yang membuka web Anda akan otomatis terhubung tanpa perlu input manual.
+        const GLOBAL_GAS_URL = "https://script.google.com/macros/s/AKfycbwEraa2-R9t43bBygDXXJh6fJUvp6oTJV5fCGOq8apKYB1I2rA39SiccmuXH7SmXDUvyA/exec"; // <-- PASTE LINK GAS ANDA DISINI
+        
         // Business Rules / Scheme Margin
         const KATEGORI = {
             'plastik': { nama: 'Plastik (PET/Gelas)', icon: 'cup-soda', rpSantri: 1000, rpDayah: 1500, rpNazif: 500, color: 'sky' },
@@ -909,7 +915,7 @@
 
         // Core App State
         let appState = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
-            gasUrl: '',
+            gasUrl: GLOBAL_GAS_URL,
             kasDayah: 0,
             gudang: { plastik: 0, kardus: 0, logam: 0, organik: 0 },
             saldoAsrama: {},
@@ -923,6 +929,11 @@
                 { id: 4, username: 'pimpinan', password: '123', role: 'pimpinan', name: 'Tengku Pimpinan' }
             ]
         };
+
+        // Paksa penggunaan URL Global ke semua perangkat jika sudah diisi di source code
+        if (GLOBAL_GAS_URL && GLOBAL_GAS_URL !== "") {
+            appState.gasUrl = GLOBAL_GAS_URL;
+        }
 
         function saveState() { 
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appState)); 
