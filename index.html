@@ -6,12 +6,22 @@
     <title>Nazif - Sistem Tata Kelola Sampah Dayah</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // PENTING UNTUK DARK MODE
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Chart.js for Data Visualization -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-    <!-- html2pdf.js for PDF Export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     
@@ -41,10 +51,6 @@
         .modal-inactive { opacity: 0; pointer-events: none; }
         .modal-content-active { transform: scale(1) translateY(0); }
         .modal-content-inactive { transform: scale(0.95) translateY(10px); }
-        
-        /* Utility for PDF generation */
-        .pdf-print-area { background: white !important; color: black !important; padding: 20px; }
-        .dark .pdf-print-area { background: white !important; color: black !important; }
         
         /* Tailwind Custom Keyframes simulation */
         @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
@@ -293,10 +299,13 @@
     </div>
 
     <!-- ==================== MAIN APP CONTAINER (DASHBOARD) ==================== -->
-    <div id="app-container" class="page-inactive flex h-full w-full bg-slate-50 dark:bg-slate-900">
+    <div id="app-container" class="page-inactive flex h-full w-full bg-slate-50 dark:bg-slate-900 relative">
         
-        <!-- SIDEBAR (DESKTOP) -->
-        <aside class="w-72 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col justify-between hidden md:flex flex-shrink-0 transition-colors duration-300 z-20">
+        <!-- Sidebar Backdrop (Mobile) -->
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[140] hidden md:hidden transition-opacity" onclick="toggleMobileSidebar()"></div>
+
+        <!-- SIDEBAR -->
+        <aside id="app-sidebar" class="w-72 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col justify-between flex-shrink-0 transition-transform duration-300 z-[150] fixed md:relative inset-y-0 left-0 -translate-x-full md:translate-x-0 shadow-2xl md:shadow-none">
             <div>
                 <!-- Brand Identity -->
                 <div class="h-24 flex items-center px-8 border-b border-slate-100 dark:border-slate-700 bg-emerald-600 dark:bg-slate-900 text-white">
@@ -319,7 +328,7 @@
                                 <i data-lucide="layout-dashboard" class="w-5 h-5 text-emerald-500"></i> Dashboard Eksekutif
                             </button>
                              <button onclick="switchTab('laporan')" id="nav-laporan" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-sm font-bold rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all">
-                                <i data-lucide="file-text" class="w-5 h-5 text-blue-500"></i> Laporan & Export
+                                <i data-lucide="file-spreadsheet" class="w-5 h-5 text-blue-500"></i> Laporan Excel
                             </button>
                         </nav>
                     </div>
@@ -361,7 +370,7 @@
 
             <!-- User Profile & Settings -->
             <div class="p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
-                <button onclick="switchTab('pengaturan')" id="nav-pengaturan" class="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group border border-transparent hover:border-slate-200 dark:hover:border-slate-600">
+                <button onclick="switchTab('pengaturan'); closeMobileSidebar();" id="nav-pengaturan" class="w-full flex items-center justify-between p-3 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors group border border-transparent hover:border-slate-200 dark:hover:border-slate-600">
                     <div class="flex items-center gap-3 overflow-hidden">
                         <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-slate-200 to-slate-300 dark:from-slate-600 dark:to-slate-700 flex items-center justify-center text-slate-700 dark:text-white font-black shadow-inner flex-shrink-0" id="user-initial">
                             U
@@ -379,13 +388,24 @@
         <main class="flex-1 flex flex-col h-full overflow-hidden relative">
             
             <!-- Header Mobile -->
-            <header class="md:hidden h-16 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-5 z-10 shadow-sm flex-shrink-0">
-                <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-500">
-                    <i data-lucide="leaf" class="w-6 h-6"></i>
-                    <span class="font-black text-xl tracking-tight text-slate-800 dark:text-white">Nazif</span>
-                </div>
+            <header class="md:hidden h-16 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 z-50 sticky top-0 flex-shrink-0 transition-colors duration-300">
                 <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center font-bold text-xs" id="mob-user-initial" onclick="switchTab('pengaturan')">U</div>
+                    <button onclick="toggleMobileSidebar()" class="p-2 -ml-2 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-500">
+                        <i data-lucide="leaf" class="w-5 h-5"></i>
+                        <span class="font-black text-lg tracking-tight text-slate-800 dark:text-white">Nazif</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    <button onclick="toggleTheme()" class="p-2 text-slate-400 hover:text-emerald-500 transition-colors rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
+                        <i data-lucide="moon" class="w-5 h-5 dark:hidden"></i>
+                        <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                    </button>
+                    <button onclick="logout()" class="p-2 text-rose-400 hover:text-rose-600 transition-colors rounded-full hover:bg-rose-50 dark:hover:bg-rose-900/30">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                    </button>
                 </div>
             </header>
 
@@ -396,12 +416,19 @@
                         <h2 class="font-black text-3xl text-slate-800 dark:text-white tracking-tight" id="headerTitle">Dashboard</h2>
                         <p class="text-slate-500 dark:text-slate-400 font-medium mt-1" id="headerSubtitle">Ikhtisar sistem informasi tata kelola sampah pesantren.</p>
                     </div>
-                    <div class="flex items-center gap-4" data-roles="admin">
-                        <!-- Indikator Sync -->
-                        <div class="role-hidden flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 cursor-pointer shadow-sm hover:shadow transition-all" id="sync-status" onclick="pullDataFromGAS()" title="Klik untuk Sinkronisasi Manual">
+                    <div class="flex items-center gap-4">
+                        <div class="role-hidden flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 cursor-pointer shadow-sm hover:shadow transition-all" data-roles="admin" id="sync-status" onclick="pullDataFromGAS()" title="Klik untuk Sinkronisasi Manual">
                             <div class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" id="sync-dot"></div>
                             <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest" id="sync-text">Standby</span>
                         </div>
+                        <div class="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
+                        <button onclick="toggleTheme()" class="p-2.5 text-slate-500 dark:text-slate-400 hover:text-emerald-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full transition-colors shadow-sm hover:shadow">
+                            <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
+                            <i data-lucide="sun" class="w-4 h-4 hidden dark:block"></i>
+                        </button>
+                        <button onclick="logout()" class="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-rose-500 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full shadow-sm hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors">
+                            <i data-lucide="log-out" class="w-4 h-4"></i> Keluar
+                        </button>
                     </div>
                 </div>
             </header>
@@ -465,7 +492,7 @@
                                 <h3 class="font-black text-xl text-slate-800 dark:text-white">Skema Margin Nazif (Per Kg)</h3>
                                 <p class="text-sm text-slate-500 dark:text-slate-400 font-medium mt-1">Transparansi pembagian nilai jual komoditas Bank Sampah.</p>
                             </div>
-                            <div class="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 text-xs font-bold px-4 py-2 rounded-xl">Data Statis</div>
+                            <div class="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 text-xs font-bold px-4 py-2 rounded-xl">Harga Dinamis</div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left">
@@ -485,25 +512,20 @@
                     </div>
                 </section>
 
-                <!-- TAB 1B: LAPORAN & EXPORT -->
+                <!-- TAB 1B: LAPORAN & EXPORT EXCEL -->
                 <section id="tab-laporan" class="tab-content hidden max-w-7xl mx-auto space-y-6 animate-fade-in">
                     <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-sm p-8 md:p-12 relative overflow-hidden">
-                         <div class="flex justify-between items-center mb-8 border-b border-slate-100 dark:border-slate-700 pb-6">
+                         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-slate-100 dark:border-slate-700 pb-6 gap-4">
                             <div>
                                 <h2 class="text-2xl font-black text-slate-800 dark:text-white">Laporan Transaksi</h2>
-                                <p class="text-slate-500 dark:text-slate-400 mt-1 font-medium">Export data log transaksi ke format PDF.</p>
+                                <p class="text-slate-500 dark:text-slate-400 mt-1 font-medium">Export data log transaksi ke format Excel (XLSX) untuk olah data lanjutan.</p>
                             </div>
-                            <button onclick="exportToPDF()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 transition-all shadow-sm">
-                                <i data-lucide="download" class="w-4 h-4"></i> Unduh PDF
+                            <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-xl flex items-center gap-2 transition-all shadow-sm">
+                                <i data-lucide="file-spreadsheet" class="w-5 h-5"></i> Unduh Excel (XLSX)
                             </button>
                         </div>
                         
-                        <!-- Area yang akan di-print ke PDF -->
-                        <div id="pdf-content" class="overflow-x-auto pdf-print-area rounded-xl">
-                             <div class="mb-6 text-center hidden" id="pdf-header">
-                                <h1 class="text-2xl font-black text-slate-800">Laporan Bank Sampah Nazif</h1>
-                                <p class="text-slate-500" id="pdf-date">Diekspor pada: -</p>
-                            </div>
+                        <div class="overflow-x-auto rounded-xl">
                             <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Log Penerimaan (Setor Masuk)</h3>
                             <table class="w-full text-left border-collapse border border-slate-200 dark:border-slate-700 mb-8">
                                 <thead class="bg-slate-50 dark:bg-slate-900/50">
@@ -568,9 +590,10 @@
                                     </div>
                                 </div>
                                 <div class="flex flex-col justify-end">
-                                    <label class="block text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Estimasi Hak Santri</label>
-                                    <div class="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl h-[86px] flex items-center px-6 shadow-sm transition-colors" id="pos-box-estimasi">
-                                        <span id="pos-estimasi" class="text-3xl font-black text-blue-600 dark:text-blue-400 truncate">Rp 0</span>
+                                    <label class="block text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3" title="Nilai poin dapat Anda sesuaikan manual jika diperlukan">Estimasi Hak Santri (Bisa Diedit) <i data-lucide="edit-3" class="inline w-3 h-3 text-emerald-500"></i></label>
+                                    <div class="relative">
+                                        <span class="absolute inset-y-0 left-0 pl-5 flex items-center text-xl font-bold text-slate-400 pointer-events-none">Rp</span>
+                                        <input type="number" id="pos-estimasi-input" required class="w-full pl-14 pr-5 py-5 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl text-3xl font-black text-blue-600 dark:text-blue-400 focus:border-emerald-500 outline-none transition-colors shadow-sm" placeholder="0">
                                     </div>
                                 </div>
                             </div>
@@ -671,7 +694,7 @@
                 </section>
 
                 <!-- TAB 7: PENGATURAN (MASTER, USERS, API, PASSWORD) -->
-                <section id="tab-pengaturan" class="tab-content hidden max-w-5xl mx-auto space-y-8 animate-fade-in">
+                <section id="tab-pengaturan" class="tab-content hidden max-w-6xl mx-auto space-y-8 animate-fade-in">
                     
                     <!-- Area Admin: Integrasi & Profil -->
                     <div class="grid md:grid-cols-2 gap-6">
@@ -697,82 +720,93 @@
                                 <button onclick="promptResetPassword('self')" class="bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-white py-4 rounded-xl font-bold transition-colors border-2 border-slate-200 dark:border-slate-600 flex justify-center items-center gap-2 shadow-sm">
                                     <i data-lucide="key" class="w-4 h-4"></i> Ubah Kata Sandi Saya
                                 </button>
-                                <button onclick="logout()" class="bg-rose-50 dark:bg-rose-900/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-400 py-4 rounded-xl font-bold transition-colors flex justify-center items-center gap-2 border border-transparent">
-                                    <i data-lucide="log-out" class="w-4 h-4"></i> Keluar Sistem
-                                </button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Area Master Data (Khusus Admin) -->
-                    <div data-roles="admin" class="grid lg:grid-cols-2 gap-6 role-hidden pt-8 border-t border-slate-200 dark:border-slate-700">
+                    <!-- Area Master Data & Harga (Khusus Admin) -->
+                    <div data-roles="admin" class="role-hidden space-y-6 pt-8 border-t border-slate-200 dark:border-slate-700">
                         
-                        <!-- Master Asrama -->
-                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-sm flex flex-col h-[550px] overflow-hidden">
-                            <div class="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30">
-                                <h3 class="font-black text-xl text-slate-800 dark:text-white flex items-center gap-3"><div class="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg"><i data-lucide="home" class="w-5 h-5 text-indigo-500"></i></div> Master Asrama</h3>
-                                <span class="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-3 py-1 rounded-full text-xs font-bold" id="count-asrama">0</span>
+                        <!-- Master Kategori & Harga -->
+                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-sm overflow-hidden">
+                            <div class="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex justify-between items-center">
+                                <h3 class="font-black text-xl text-slate-800 dark:text-white flex items-center gap-3"><div class="p-2 bg-sky-50 dark:bg-sky-900/30 rounded-lg"><i data-lucide="tags" class="w-5 h-5 text-sky-500"></i></div> Pengaturan Margin & Harga</h3>
                             </div>
-                            <div class="p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
-                                <form onsubmit="event.preventDefault(); tambahAsrama();" class="flex gap-3">
-                                    <input type="text" id="master-nama-asrama" required placeholder="Ketik nama asrama baru..." class="flex-1 px-5 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-indigo-500 font-bold text-slate-800 dark:text-white">
-                                    <button type="submit" class="bg-indigo-600 text-white px-6 rounded-xl font-bold hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-95 transition-transform"><i data-lucide="plus" class="w-5 h-5"></i></button>
-                                </form>
-                            </div>
-                            <div class="flex-1 overflow-y-auto p-2 bg-slate-50/30 dark:bg-slate-900/10">
-                                <ul id="master-asrama-body" class="divide-y divide-slate-100 dark:divide-slate-700/50"></ul>
+                            <div class="overflow-x-auto p-4">
+                                <table class="w-full text-left border-collapse min-w-[600px]">
+                                    <thead>
+                                        <tr class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-700">
+                                            <th class="pb-3 px-2">Kategori</th>
+                                            <th class="pb-3 px-2">Poin Santri (Rp)</th>
+                                            <th class="pb-3 px-2">Kas Dayah (Rp)</th>
+                                            <th class="pb-3 px-2">Fee Sistem (Rp)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="master-harga-body" class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                        <!-- Rendered via JS -->
+                                    </tbody>
+                                </table>
+                                <div class="mt-4 flex justify-end">
+                                    <button onclick="simpanMasterHarga()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-6 rounded-xl shadow-sm transition-colors flex items-center gap-2">
+                                        <i data-lucide="save" class="w-4 h-4"></i> Simpan Perubahan Harga
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Manajemen Akun -->
-                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-sm flex flex-col h-[550px] overflow-hidden">
-                            <div class="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex justify-between items-center">
-                                <h3 class="font-black text-xl text-slate-800 dark:text-white flex items-center gap-3"><div class="p-2 bg-rose-50 dark:bg-rose-900/30 rounded-lg"><i data-lucide="users-2" class="w-5 h-5 text-rose-500"></i></div> Manajemen Pengguna</h3>
+                        <div class="grid lg:grid-cols-2 gap-6">
+                            <!-- Master Asrama -->
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-sm flex flex-col h-[550px] overflow-hidden">
+                                <div class="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30">
+                                    <h3 class="font-black text-xl text-slate-800 dark:text-white flex items-center gap-3"><div class="p-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg"><i data-lucide="home" class="w-5 h-5 text-indigo-500"></i></div> Master Asrama</h3>
+                                    <span class="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-3 py-1 rounded-full text-xs font-bold" id="count-asrama">0</span>
+                                </div>
+                                <div class="p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                    <form onsubmit="event.preventDefault(); tambahAsrama();" class="flex gap-3">
+                                        <input type="text" id="master-nama-asrama" required placeholder="Ketik nama asrama baru..." class="flex-1 px-5 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-indigo-500 font-bold text-slate-800 dark:text-white">
+                                        <button type="submit" class="bg-indigo-600 text-white px-6 rounded-xl font-bold hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-95 transition-transform"><i data-lucide="plus" class="w-5 h-5"></i></button>
+                                    </form>
+                                </div>
+                                <div class="flex-1 overflow-y-auto p-2 bg-slate-50/30 dark:bg-slate-900/10">
+                                    <ul id="master-asrama-body" class="divide-y divide-slate-100 dark:divide-slate-700/50"></ul>
+                                </div>
                             </div>
-                            <div class="p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
-                                <form onsubmit="event.preventDefault(); tambahUser();" class="flex flex-col gap-3">
-                                    <div class="flex gap-3">
-                                        <input type="text" id="add-user-username" required placeholder="Username" class="w-1/2 px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-rose-500 font-bold text-sm text-slate-800 dark:text-white">
-                                        <input type="password" id="add-user-pass" required placeholder="Password" class="w-1/2 px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-rose-500 font-bold text-sm text-slate-800 dark:text-white">
-                                    </div>
-                                    <div class="flex gap-3">
-                                        <input type="text" id="add-user-name" required placeholder="Nama Lengkap" class="flex-1 px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-rose-500 font-bold text-sm text-slate-800 dark:text-white">
-                                        <select id="add-user-role" class="w-1/3 px-3 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-rose-500 font-black text-xs cursor-pointer text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                            <option value="operator">Operator POS</option>
-                                            <option value="bendahara">Bendahara</option>
-                                            <option value="musyrif">Wali Asrama</option>
-                                            <option value="pimpinan">Pimpinan</option>
-                                            <option value="admin">Administrator</option>
-                                        </select>
-                                    </div>
-                                    <button type="submit" class="w-full bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white px-4 py-3.5 rounded-xl font-bold shadow-md mt-2 transition-colors">Buat Akun Baru</button>
-                                </form>
-                            </div>
-                            <div class="flex-1 overflow-y-auto p-2 bg-slate-50/30 dark:bg-slate-900/10">
-                                <ul id="user-management-body" class="divide-y divide-slate-100 dark:divide-slate-700/50"></ul>
+
+                            <!-- Manajemen Akun -->
+                            <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-sm flex flex-col h-[550px] overflow-hidden">
+                                <div class="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 flex justify-between items-center">
+                                    <h3 class="font-black text-xl text-slate-800 dark:text-white flex items-center gap-3"><div class="p-2 bg-rose-50 dark:bg-rose-900/30 rounded-lg"><i data-lucide="users-2" class="w-5 h-5 text-rose-500"></i></div> Manajemen Pengguna</h3>
+                                </div>
+                                <div class="p-5 border-b border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800">
+                                    <form onsubmit="event.preventDefault(); tambahUser();" class="flex flex-col gap-3">
+                                        <div class="flex gap-3">
+                                            <input type="text" id="add-user-username" required placeholder="Username" class="w-1/2 px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-rose-500 font-bold text-sm text-slate-800 dark:text-white">
+                                            <input type="password" id="add-user-pass" required placeholder="Password" class="w-1/2 px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-rose-500 font-bold text-sm text-slate-800 dark:text-white">
+                                        </div>
+                                        <div class="flex gap-3">
+                                            <input type="text" id="add-user-name" required placeholder="Nama Lengkap" class="flex-1 px-4 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-rose-500 font-bold text-sm text-slate-800 dark:text-white">
+                                            <select id="add-user-role" class="w-1/3 px-3 py-3 border-2 border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-900 outline-none focus:border-rose-500 font-black text-xs cursor-pointer text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                                <option value="operator">Operator POS</option>
+                                                <option value="bendahara">Bendahara</option>
+                                                <option value="musyrif">Wali Asrama</option>
+                                                <option value="pimpinan">Pimpinan</option>
+                                                <option value="admin">Administrator</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="w-full bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white px-4 py-3.5 rounded-xl font-bold shadow-md mt-2 transition-colors">Buat Akun Baru</button>
+                                    </form>
+                                </div>
+                                <div class="flex-1 overflow-y-auto p-2 bg-slate-50/30 dark:bg-slate-900/10">
+                                    <ul id="user-management-body" class="divide-y divide-slate-100 dark:divide-slate-700/50"></ul>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <div class="h-24 md:hidden"></div>
             </div>
         </main>
     </div>
-
-    <!-- Mobile Bottom Nav -->
-    <nav class="md:hidden fixed bottom-0 w-full bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border-t border-slate-200 dark:border-slate-700 px-6 py-2 flex justify-between items-center z-[120] hidden pb-safe shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]" id="mobile-nav">
-        <button onclick="switchTab('dashboard')" class="flex flex-col items-center gap-1 w-16 text-slate-400 hover:text-emerald-600 transition-colors role-hidden" data-roles="admin,pimpinan,bendahara">
-            <i data-lucide="layout-dashboard" class="w-6 h-6"></i><span class="text-[10px] font-bold">Ringkasan</span>
-        </button>
-        <button onclick="switchTab('pos')" class="flex flex-col items-center gap-1 w-16 relative -top-5 role-hidden group" data-roles="admin,operator">
-            <div class="bg-emerald-600 text-white p-4 rounded-full shadow-lg shadow-emerald-500/40 border-4 border-white dark:border-slate-800 transition-transform active:scale-95 group-hover:bg-emerald-700"><i data-lucide="plus" class="w-6 h-6 stroke-[3]"></i></div>
-            <span class="text-[10px] font-bold mt-1 text-slate-500">Setor POS</span>
-        </button>
-        <button onclick="switchTab('klasemen')" class="flex flex-col items-center gap-1 w-16 text-slate-400 hover:text-yellow-500 transition-colors role-hidden" data-roles="admin,pimpinan,operator,bendahara,musyrif">
-            <i data-lucide="medal" class="w-6 h-6"></i><span class="text-[10px] font-bold">Klasemen</span>
-        </button>
-    </nav>
 
     <script>
         // ----------------- UTILS & MODALS -----------------
@@ -896,24 +930,36 @@
             confirmActionCallback = null;
         }
 
+        // Mobile Sidebar Controls
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('app-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+                setTimeout(() => backdrop.classList.add('opacity-100'), 10);
+            } else {
+                closeMobileSidebar();
+            }
+        }
+
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('app-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            
+            sidebar.classList.add('-translate-x-full');
+            backdrop.classList.remove('opacity-100');
+            setTimeout(() => backdrop.classList.add('hidden'), 300);
+        }
+
         // ----------------- APP STATE & BUSINESS LOGIC -----------------
         const STORAGE_KEY = 'nazif_v_final';
         
-        // === KONFIGURASI API GLOBAL (PENTING UNTUK MULTI-PERANGKAT) ===
-        // Masukkan URL Web App GAS Anda di dalam tanda kutip di bawah ini.
-        // Dengan menaruhnya di sini (sebelum di-push ke Github), semua HP/Laptop 
-        // yang membuka web Anda akan otomatis terhubung tanpa perlu input manual.
-        const GLOBAL_GAS_URL = "https://script.google.com/macros/s/AKfycbwEraa2-R9t43bBygDXXJh6fJUvp6oTJV5fCGOq8apKYB1I2rA39SiccmuXH7SmXDUvyA/exec"; // <-- PASTE LINK GAS ANDA DISINI
+        // PASTE LINK GAS ANDA DISINI JIKA INGIN DITANAM DI SOURCE CODE
+        const GLOBAL_GAS_URL = "https://script.google.com/macros/s/AKfycbwEraa2-R9t43bBygDXXJh6fJUvp6oTJV5fCGOq8apKYB1I2rA39SiccmuXH7SmXDUvyA/exec"; 
         
-        // Business Rules / Scheme Margin
-        const KATEGORI = {
-            'plastik': { nama: 'Plastik (PET/Gelas)', icon: 'cup-soda', rpSantri: 1000, rpDayah: 1500, rpNazif: 500, color: 'sky' },
-            'kardus':  { nama: 'Kertas / Kardus', icon: 'package-open', rpSantri: 700, rpDayah: 1000, rpNazif: 300, color: 'amber' },
-            'logam':   { nama: 'Logam / Besi', icon: 'server', rpSantri: 1500, rpDayah: 2000, rpNazif: 500, color: 'slate' },
-            'organik': { nama: 'Organik (Kompos)', icon: 'leafy-green', rpSantri: 0, rpDayah: 0, rpNazif: 0, color: 'emerald' }
-        };
-
-        // Core App State
+        // Core App State (Menyimpan kategori harga dinamis)
         let appState = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
             gasUrl: GLOBAL_GAS_URL,
             kasDayah: 0,
@@ -927,8 +973,24 @@
                 { id: 2, username: 'operator', password: '123', role: 'operator', name: 'Ust. Operator' },
                 { id: 3, username: 'bendahara', password: '123', role: 'bendahara', name: 'Bendahara Dayah' },
                 { id: 4, username: 'pimpinan', password: '123', role: 'pimpinan', name: 'Tengku Pimpinan' }
-            ]
+            ],
+            kategori: {
+                'plastik': { nama: 'Plastik (PET/Gelas)', icon: 'cup-soda', rpSantri: 1000, rpDayah: 1500, rpNazif: 500, color: 'sky' },
+                'kardus':  { nama: 'Kertas / Kardus', icon: 'package-open', rpSantri: 700, rpDayah: 1000, rpNazif: 300, color: 'amber' },
+                'logam':   { nama: 'Logam / Besi', icon: 'server', rpSantri: 1500, rpDayah: 2000, rpNazif: 500, color: 'slate' },
+                'organik': { nama: 'Organik (Kompos)', icon: 'leafy-green', rpSantri: 0, rpDayah: 0, rpNazif: 0, color: 'emerald' }
+            }
         };
+
+        // Migrasi untuk pengguna lama yang belum punya state kategori
+        if (!appState.kategori) {
+            appState.kategori = {
+                'plastik': { nama: 'Plastik (PET/Gelas)', icon: 'cup-soda', rpSantri: 1000, rpDayah: 1500, rpNazif: 500, color: 'sky' },
+                'kardus':  { nama: 'Kertas / Kardus', icon: 'package-open', rpSantri: 700, rpDayah: 1000, rpNazif: 300, color: 'amber' },
+                'logam':   { nama: 'Logam / Besi', icon: 'server', rpSantri: 1500, rpDayah: 2000, rpNazif: 500, color: 'slate' },
+                'organik': { nama: 'Organik (Kompos)', icon: 'leafy-green', rpSantri: 0, rpDayah: 0, rpNazif: 0, color: 'emerald' }
+            };
+        }
 
         // Paksa penggunaan URL Global ke semua perangkat jika sudah diisi di source code
         if (GLOBAL_GAS_URL && GLOBAL_GAS_URL !== "") {
@@ -942,7 +1004,7 @@
         // Recalculate Ledger
         function recalculateStateFromHistory() {
             appState.kasDayah = 0;
-            Object.keys(KATEGORI).forEach(k => appState.gudang[k] = 0);
+            Object.keys(appState.kategori).forEach(k => appState.gudang[k] = 0);
             appState.daftarAsrama.forEach(a => appState.saldoAsrama[a.nama] = 0);
 
             // Calculate In
@@ -1088,7 +1150,6 @@
             document.getElementById('user-role').innerText = user.role;
             const inisial = user.name.substring(0,2).toUpperCase();
             document.getElementById('user-initial').innerText = inisial;
-            document.getElementById('mob-user-initial').innerText = inisial;
             document.getElementById('setting-my-name').innerText = `${user.name} (${user.username})`;
             
             // UI Transition
@@ -1097,7 +1158,6 @@
             
             document.getElementById('app-container').classList.remove('page-inactive');
             document.getElementById('app-container').classList.add('page-active');
-            document.getElementById('mobile-nav').classList.remove('hidden');
 
             // Apply RBAC
             document.querySelectorAll('[data-roles]').forEach(el => {
@@ -1120,7 +1180,8 @@
             currentUser = null;
             document.getElementById('app-container').classList.remove('page-active');
             document.getElementById('app-container').classList.add('page-inactive');
-            document.getElementById('mobile-nav').classList.add('hidden');
+            closeMobileSidebar();
+            
             document.getElementById('login-user').value = '';
             document.getElementById('login-pass').value = '';
             showLandingPage();
@@ -1131,13 +1192,11 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
             
-            // Mobile Nav Active State
-            document.querySelectorAll('#mobile-nav button').forEach(b => {
-                b.classList.remove('text-emerald-600'); b.classList.add('text-slate-400');
-            });
-            const mobBtn = document.getElementById(`mob-${tabId}`);
-            if(mobBtn) { mobBtn.classList.add('text-emerald-600'); mobBtn.classList.remove('text-slate-400'); }
-
+            // Close mobile sidebar on navigation
+            if(window.innerWidth < 768) {
+                closeMobileSidebar();
+            }
+            
             // Titles
             const titleMap = { 
                 dashboard: ['Dashboard Eksekutif', 'Ikhtisar sistem informasi tata kelola sampah pesantren.'], 
@@ -1147,7 +1206,7 @@
                 tabungan: ['Buku Tabungan', 'Pencairan poin asrama menjadi voucher koperasi.'], 
                 klasemen: ['Eco Dayah Index', 'Peringkat asrama terbersih berdasarkan poin & sedekah.'], 
                 pengaturan: ['Pengaturan Sistem', 'Konfigurasi database, pengguna, dan keamanan.'],
-                laporan: ['Laporan & Export', 'Log transaksi harian dan export dokumen PDF.']
+                laporan: ['Laporan & Export Excel', 'Log transaksi harian dan export dokumen XLSX.']
             };
             if(titleMap[tabId]) {
                 document.getElementById('headerTitle').innerText = titleMap[tabId][0];
@@ -1161,7 +1220,7 @@
             if(tabId === 'penjualan') setupPenjualan();
             if(tabId === 'tabungan') renderTabungan();
             if(tabId === 'klasemen') renderKlasemen('klasemen-list', false);
-            if(tabId === 'pengaturan') { renderMasterAsrama(); renderUsers(); }
+            if(tabId === 'pengaturan') { renderMasterAsrama(); renderUsers(); renderMasterHarga(); }
             if(tabId === 'laporan') renderLaporan();
         }
 
@@ -1254,7 +1313,7 @@
             });
         }
 
-        // ----------------- PDF EXPORT -----------------
+        // ----------------- EXCEL EXPORT & LAPORAN -----------------
         function renderLaporan() {
             // Setor Table
             const tbodySetor = document.getElementById('laporan-setor-body');
@@ -1275,7 +1334,7 @@
                     const kas = Number(trx.marginDayah) || 0;
                     
                     let katName = trx.kategoriNama;
-                    if (!katName && KATEGORI[trx.katId]) katName = KATEGORI[trx.katId].nama;
+                    if (!katName && appState.kategori[trx.katId]) katName = appState.kategori[trx.katId].nama;
                     if (!katName) katName = trx.katId || '-';
 
                     let dateStr = '-';
@@ -1326,7 +1385,7 @@
                     const berat = Number(trx.berat) || 0;
                     const total = Number(trx.total) || 0;
                     
-                    let katName = KATEGORI[trx.katId] ? KATEGORI[trx.katId].nama : (trx.katId || '-');
+                    let katName = appState.kategori[trx.katId] ? appState.kategori[trx.katId].nama : (trx.katId || '-');
 
                     let dateStr = '-';
                     try {
@@ -1352,30 +1411,56 @@
             }
         }
 
-        function exportToPDF() {
-            const element = document.getElementById('pdf-content');
-            
-            document.getElementById('pdf-header').classList.remove('hidden');
-            document.getElementById('pdf-date').innerText = `Diekspor pada: ${new Date().toLocaleString('id-ID')}`;
-            
-            const opt = {
-                margin:       10,
-                filename:     `Laporan_Nazif_${Date.now()}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
+        function exportToExcel() {
+            if (typeof XLSX === 'undefined') {
+                showToast("Library Excel gagal dimuat. Cek koneksi internet.", "error");
+                return;
+            }
 
-            showToast("Menghasilkan dokumen PDF...", "info");
+            showToast("Menghasilkan file Excel...", "info");
             
-            html2pdf().set(opt).from(element).save().then(() => {
-                document.getElementById('pdf-header').classList.add('hidden');
-                showToast("PDF Berhasil diunduh!");
-            }).catch(err => {
-                console.error("PDF Export Error:", err);
-                document.getElementById('pdf-header').classList.add('hidden');
-                showToast("Gagal menghasilkan PDF", "error");
+            // 1. Buat Workbook baru
+            const wb = XLSX.utils.book_new();
+
+            // 2. Siapkan data Penerimaan (Setor)
+            const dataSetor = appState.historyMasuk.map(trx => {
+                let dateStr = '-';
+                try { if (trx.idTrx) dateStr = new Date(parseInt(trx.idTrx.split('-')[1])).toLocaleString('id-ID'); } catch(e){}
+                let katName = trx.kategoriNama || appState.kategori[trx.katId]?.nama || trx.katId;
+                
+                return {
+                    "Tanggal & Waktu": dateStr,
+                    "ID Transaksi": trx.idTrx,
+                    "Asrama / Sumber": trx.asrama,
+                    "Kategori": katName,
+                    "Berat (Kg)": Number(trx.berat) || 0,
+                    "Poin Santri (Rp)": Number(trx.poinSantri) || 0,
+                    "Kas Dayah (Rp)": Number(trx.marginDayah) || 0
+                };
             });
+            const wsSetor = XLSX.utils.json_to_sheet(dataSetor);
+            XLSX.utils.book_append_sheet(wb, wsSetor, "Penerimaan (Setor)");
+
+            // 3. Siapkan data Penjualan
+            const dataJual = appState.historyKeluar.filter(t => t.type === 'JUAL').map(trx => {
+                let dateStr = '-';
+                try { if (trx.idTrx) dateStr = new Date(parseInt(trx.idTrx.split('-')[1])).toLocaleString('id-ID'); } catch(e){}
+                let katName = appState.kategori[trx.katId]?.nama || trx.katId;
+
+                return {
+                    "Tanggal & Waktu": dateStr,
+                    "Pengepul": trx.pengepul,
+                    "Kategori": katName,
+                    "Berat Keluar (Kg)": Number(trx.berat) || 0,
+                    "Total Uang (Rp)": Number(trx.total) || 0
+                };
+            });
+            const wsJual = XLSX.utils.json_to_sheet(dataJual);
+            XLSX.utils.book_append_sheet(wb, wsJual, "Penjualan (Gudang)");
+
+            // 4. Download file
+            XLSX.writeFile(wb, `Laporan_Nazif_${Date.now()}.xlsx`);
+            showToast("Excel berhasil diunduh!", "success");
         }
 
         // ----------------- LANDING PAGE & DASHBOARD -----------------
@@ -1402,8 +1487,8 @@
 
         function renderTabelMargin() {
             const tb = document.getElementById('tabelHargaMargin');
-            tb.innerHTML = Object.keys(KATEGORI).map(k => {
-                const item = KATEGORI[k];
+            tb.innerHTML = Object.keys(appState.kategori).map(k => {
+                const item = appState.kategori[k];
                 return `<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <td class="px-8 py-4 flex items-center gap-3 font-bold text-slate-700 dark:text-slate-300">
                         <div class="w-8 h-8 rounded-full bg-${item.color}-50 dark:bg-${item.color}-900/30 text-${item.color}-500 flex items-center justify-center"><i data-lucide="${item.icon}" class="w-4 h-4"></i></div>
@@ -1468,8 +1553,8 @@
         
         function renderKategoriPOS() {
             const cont = document.getElementById('pos-kategori');
-            cont.innerHTML = Object.keys(KATEGORI).map(k => {
-                const c = KATEGORI[k]; const active = selectedKatPOS === k;
+            cont.innerHTML = Object.keys(appState.kategori).map(k => {
+                const c = appState.kategori[k]; const active = selectedKatPOS === k;
                 return `<div onclick="selectedKatPOS='${k}'; renderKategoriPOS(); calcPOS();" class="cursor-pointer border-2 rounded-2xl p-5 text-center transition-all duration-200 select-none group flex flex-col items-center justify-center gap-2 ${active ? `border-${c.color}-500 bg-${c.color}-50 dark:bg-${c.color}-900/40 shadow-sm` : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600'}">
                     <div class="w-12 h-12 rounded-full ${active ? `bg-${c.color}-500 text-white shadow-md` : `bg-slate-100 dark:bg-slate-700 text-slate-400 group-hover:bg-slate-200 dark:group-hover:bg-slate-600`} flex items-center justify-center transition-transform ${active?'scale-110':''}"><i data-lucide="${c.icon}" class="w-6 h-6"></i></div>
                     <span class="text-[11px] font-black uppercase tracking-wider leading-tight ${active ? `text-${c.color}-800 dark:text-${c.color}-300` : 'text-slate-500'}">${c.nama}</span>
@@ -1482,19 +1567,18 @@
             const b = parseFloat(document.getElementById('pos-berat').value) || 0;
             const isSedekah = document.getElementById('pos-sedekah').checked;
             
-            const estimasiEl = document.getElementById('pos-estimasi');
-            const boxEl = document.getElementById('pos-box-estimasi');
+            const estimasiInput = document.getElementById('pos-estimasi-input');
             const sedekahBox = document.getElementById('pos-box-sedekah');
 
             if(isSedekah) {
-                estimasiEl.innerText = 'Disumbangkan';
-                estimasiEl.className = 'text-xl font-bold text-emerald-600 dark:text-emerald-400 truncate';
-                boxEl.className = 'bg-emerald-50 dark:bg-emerald-900/30 border-2 border-emerald-200 dark:border-emerald-700 rounded-2xl h-[86px] flex items-center px-6 shadow-inner transition-colors';
+                estimasiInput.value = 0;
+                estimasiInput.disabled = true;
+                estimasiInput.classList.add('opacity-50');
                 sedekahBox.className = 'bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-500 rounded-2xl p-6 transition-all duration-300';
             } else {
-                estimasiEl.innerText = formatRp(b * KATEGORI[selectedKatPOS].rpSantri);
-                estimasiEl.className = 'text-3xl font-black text-blue-600 dark:text-blue-400 truncate tracking-tight';
-                boxEl.className = 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl h-[86px] flex items-center px-6 shadow-sm transition-colors';
+                estimasiInput.value = (b * appState.kategori[selectedKatPOS].rpSantri);
+                estimasiInput.disabled = false;
+                estimasiInput.classList.remove('opacity-50');
                 sedekahBox.className = 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-600 rounded-2xl p-6 transition-all duration-300 hover:border-emerald-200 dark:hover:border-emerald-800';
             }
         }
@@ -1506,16 +1590,22 @@
             const asrama = document.getElementById('pos-asrama').value;
             const berat = parseFloat(document.getElementById('pos-berat').value);
             const isSedekah = document.getElementById('pos-sedekah').checked;
-            const katInfo = KATEGORI[selectedKatPOS];
+            const katInfo = appState.kategori[selectedKatPOS];
             
             if(!asrama || isNaN(berat) || berat <= 0) return showToast("Data timbangan tidak lengkap/valid", "error");
 
-            const poinS = isSedekah ? 0 : (berat * katInfo.rpSantri);
-            const marDayah = isSedekah ? (berat * (katInfo.rpDayah + katInfo.rpSantri)) : (berat * katInfo.rpDayah);
+            // Mengambil nilai poin yang diinput manual (jika ada editan)
+            const poinS = isSedekah ? 0 : parseFloat(document.getElementById('pos-estimasi-input').value) || 0;
+            
+            // Kalkulasi ulang margin kas dayah secara adil
+            // Kas dayah = (Hak normal Dayah) + (Sisa hak santri yang tidak diberikan/disedekahkan)
+            const expectedPoinS = berat * katInfo.rpSantri;
+            const sisaPoinS = expectedPoinS - poinS;
+            const marDayah = (berat * katInfo.rpDayah) + sisaPoinS;
             
             const payload = {
                 idTrx: 'IN-'+Date.now(), asrama: asrama, katId: selectedKatPOS, kategoriNama: katInfo.nama, 
-                berat: berat, isSedekah: isSedekah, poinSantri: poinS, poinPrestasi: (berat * katInfo.rpSantri), 
+                berat: berat, isSedekah: isSedekah, poinSantri: poinS, poinPrestasi: expectedPoinS, 
                 marginDayah: marDayah, feeNazif: (berat * katInfo.rpNazif)
             };
             
@@ -1534,7 +1624,8 @@
         function renderGudang() {
             const cont = document.getElementById('gudang-cards');
             cont.innerHTML = Object.keys(appState.gudang).map(k => {
-                const c = KATEGORI[k];
+                const c = appState.kategori[k];
+                if(!c) return '';
                 return `<div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] p-8 shadow-sm text-center relative overflow-hidden group hover:border-${c.color}-300 transition-colors">
                     <div class="absolute -right-6 -top-6 w-32 h-32 bg-${c.color}-50 dark:bg-${c.color}-900/20 rounded-full blur-2xl group-hover:scale-125 transition-transform pointer-events-none"></div>
                     <div class="w-16 h-16 bg-${c.color}-100 dark:bg-${c.color}-900/40 text-${c.color}-600 rounded-full flex items-center justify-center mx-auto mb-5 relative z-10 border-4 border-white dark:border-slate-800 shadow-sm"><i data-lucide="${c.icon}" class="w-8 h-8"></i></div>
@@ -1551,7 +1642,7 @@
             
             if(available.length > 0){
                 sel.innerHTML = '<option value="" disabled selected>-- Pilih Komoditas --</option>' + 
-                                available.map(k => `<option value="${k}">${KATEGORI[k].nama}</option>`).join('');
+                                available.map(k => `<option value="${k}">${appState.kategori[k].nama}</option>`).join('');
             } else {
                 sel.innerHTML = '<option value="" disabled selected>-- Gudang Kosong --</option>';
             }
@@ -1575,7 +1666,7 @@
 
             if(!k || isNaN(b) || b <= 0 || b > appState.gudang[k]) return showToast("Stok gudang tidak mencukupi", "error");
             
-            showConfirmModal("Cairkan Gudang", `Jual ${b}Kg ${KATEGORI[k].nama} seharga ${formatRp(rp)} ke ${pengepul}?`, false, '', 'number', () => {
+            showConfirmModal("Cairkan Gudang", `Jual ${b}Kg ${appState.kategori[k].nama} seharga ${formatRp(rp)} ke ${pengepul}?`, false, '', 'number', () => {
                 const payload = { idTrx: 'OUT-'+Date.now(), type: 'JUAL', katId: k, berat: b, total: rp, pengepul: pengepul };
                 appState.historyKeluar.push(payload);
                 recalculateStateFromHistory();
@@ -1630,7 +1721,43 @@
         }
 
         // ----------------- PENGATURAN & MASTER DATA (ADMIN) -----------------
-        
+        function renderMasterHarga() {
+            const list = document.getElementById('master-harga-body');
+            list.innerHTML = Object.keys(appState.kategori).map(k => {
+                const item = appState.kategori[k];
+                return `
+                <tr class="group">
+                    <td class="py-3 px-2 font-bold text-xs text-slate-700 dark:text-slate-300">
+                        ${item.nama}
+                    </td>
+                    <td class="py-3 px-2">
+                        <input type="number" id="harga-santri-${k}" value="${item.rpSantri}" class="w-24 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-bold text-blue-600 dark:text-blue-400 outline-none focus:border-sky-500">
+                    </td>
+                    <td class="py-3 px-2">
+                        <input type="number" id="harga-dayah-${k}" value="${item.rpDayah}" class="w-24 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-bold text-emerald-600 dark:text-emerald-400 outline-none focus:border-sky-500">
+                    </td>
+                    <td class="py-3 px-2">
+                        <input type="number" id="harga-nazif-${k}" value="${item.rpNazif}" class="w-24 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-bold text-slate-500 dark:text-slate-400 outline-none focus:border-sky-500">
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        function simpanMasterHarga() {
+            Object.keys(appState.kategori).forEach(k => {
+                const rpSantri = parseFloat(document.getElementById(`harga-santri-${k}`).value) || 0;
+                const rpDayah = parseFloat(document.getElementById(`harga-dayah-${k}`).value) || 0;
+                const rpNazif = parseFloat(document.getElementById(`harga-nazif-${k}`).value) || 0;
+                
+                appState.kategori[k].rpSantri = rpSantri;
+                appState.kategori[k].rpDayah = rpDayah;
+                appState.kategori[k].rpNazif = rpNazif;
+            });
+            saveState();
+            showToast("Harga Margin berhasil diperbarui!", "success");
+        }
+
         function renderMasterAsrama() {
             if(!appState.daftarAsrama) appState.daftarAsrama = [];
             document.getElementById('count-asrama').innerText = appState.daftarAsrama.length;
