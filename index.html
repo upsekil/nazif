@@ -8,35 +8,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Tailwind Config for Production -->
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        emerald: {
-                            50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399',
-                            500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b',
-                        }
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.4s ease-out forwards',
-                        'slide-up': 'slideUp 0.5s ease-out forwards',
-                        'float': 'float 6s ease-in-out infinite',
-                        'toast-in': 'toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
-                    },
-                    keyframes: {
-                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-                        slideUp: { '0%': { opacity: '0', transform: 'translateY(30px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-                        float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-15px)' } },
-                        toastIn: { '0%': { transform: 'translateX(100%)', opacity: '0' }, '100%': { transform: 'translateX(0)', opacity: '1' } }
-                    }
-                }
-            }
-        }
-    </script>
+    <!-- Chart.js for Data Visualization -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <!-- html2pdf.js for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-font-smoothing: antialiased; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -55,11 +33,29 @@
         .glass-nav { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.3); }
         .dark .glass-nav { background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-        /* Custom Modal Transition */
+        /* Custom Transitions */
+        .page-active { opacity: 1; pointer-events: auto; z-index: 200; position: absolute; inset: 0; transition: opacity 0.5s ease; }
+        .page-inactive { opacity: 0; pointer-events: none; z-index: 10; position: absolute; inset: 0; transition: opacity 0.5s ease; }
+
         .modal-active { opacity: 1; pointer-events: auto; }
         .modal-inactive { opacity: 0; pointer-events: none; }
         .modal-content-active { transform: scale(1) translateY(0); }
         .modal-content-inactive { transform: scale(0.95) translateY(10px); }
+        
+        /* Utility for PDF generation */
+        .pdf-print-area { background: white !important; color: black !important; padding: 20px; }
+        .dark .pdf-print-area { background: white !important; color: black !important; }
+        
+        /* Tailwind Custom Keyframes simulation */
+        @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes slideUp { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+        @keyframes floatAnim { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        @keyframes toastIn { 0% { transform: translateX(100%); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
+        
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .animate-slide-up { animation: slideUp 0.5s ease-out forwards; }
+        .animate-float { animation: floatAnim 6s ease-in-out infinite; }
+        .animate-toast-in { animation: toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 h-screen overflow-hidden text-sm relative transition-colors duration-300">
@@ -88,7 +84,7 @@
     </div>
 
     <!-- ==================== LANDING PAGE (ETALASE PUBLIK) ==================== -->
-    <div id="landing-page" class="absolute inset-0 z-[200] bg-slate-50 dark:bg-slate-900 overflow-y-auto transition-transform duration-500">
+    <div id="landing-page" class="page-active bg-slate-50 dark:bg-slate-900 overflow-y-auto">
         
         <!-- Navbar Publik -->
         <nav class="fixed top-0 w-full glass-nav z-50 transition-colors">
@@ -118,7 +114,7 @@
 
         <!-- Hero Section -->
         <div class="relative pt-32 pb-16 lg:pt-48 lg:pb-32 overflow-hidden">
-            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-emerald-100/50 via-slate-50 to-slate-50 dark:from-emerald-900/20 dark:via-slate-900 dark:to-slate-900 z-0"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-emerald-100/50 via-slate-50 to-slate-50 dark:from-emerald-900/20 dark:via-slate-900 dark:to-slate-900 z-0"></div>
             
             <!-- Ornamen Dekoratif -->
             <div class="absolute top-20 right-0 w-72 h-72 bg-emerald-400/20 rounded-full blur-3xl animate-float pointer-events-none"></div>
@@ -209,7 +205,7 @@
                     </div>
                     <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto -mt-10 mb-4 font-black border-4 border-white dark:border-slate-800 relative z-10">3</div>
                     <h4 class="font-black text-xl text-slate-800 dark:text-white mb-3">Jual Massal</h4>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">Gudang Dayah mengumpulkan dalam skala besar (ton) lalu menjual ke pabrik/pengepul besar dengan harga terbaik.</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">Gudang Dayah mengumpulkan dalam skala besar lalu menjual ke pabrik/pengepul besar dengan harga terbaik.</p>
                 </div>
                 <!-- Step 4 -->
                 <div class="bg-white dark:bg-slate-800 p-8 rounded-[2rem] shadow-xl shadow-slate-200/40 dark:shadow-none border border-slate-100 dark:border-slate-700 text-center relative group hover:-translate-y-2 transition-transform duration-300">
@@ -218,14 +214,14 @@
                     </div>
                     <div class="w-8 h-8 bg-amber-500 text-white rounded-full flex items-center justify-center mx-auto -mt-10 mb-4 font-black border-4 border-white dark:border-slate-800 relative z-10">4</div>
                     <h4 class="font-black text-xl text-slate-800 dark:text-white mb-3">Distribusi Berkah</h4>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">Hasil penjualan dibagi adil secara otomatis: Kas Dayah, Poin Hak Santri (Voucher), dan Fee Manajemen Sistem.</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed">Hasil penjualan dibagi adil secara otomatis: Kas Dayah, Poin Hak Santri (Voucher), dan Fee Sistem.</p>
                 </div>
             </div>
         </div>
 
         <!-- Klasemen Publik -->
         <div class="bg-slate-900 dark:bg-slate-950 py-24 mt-10 relative overflow-hidden">
-            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSIvPjwvc3ZnPg==')]"></div>
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-700 via-slate-900 to-slate-950"></div>
             <div class="max-w-4xl mx-auto px-5 relative z-10">
                 <div class="text-center mb-12">
                     <div class="inline-block p-4 bg-yellow-500/20 rounded-full mb-6">
@@ -252,24 +248,19 @@
                 <p class="text-sm font-medium text-center mb-8 max-w-md">Sistem Informasi Tata Kelola Sampah Pesantren. Mendukung terciptanya ekonomi sirkular dan lingkungan islami yang bersih.</p>
                 <div class="w-full border-t border-slate-800 pt-8 text-center flex flex-col md:flex-row justify-between items-center text-xs font-semibold tracking-wider">
                     <p>© 2026 Nazif System. Hak Cipta Dilindungi.</p>
-                    <div class="flex gap-4 mt-4 md:mt-0">
-                        <a href="#" class="hover:text-emerald-400 transition-colors">Tentang Kami</a>
-                        <a href="#" class="hover:text-emerald-400 transition-colors">Panduan Sistem</a>
-                        <a href="#" class="hover:text-emerald-400 transition-colors">Privasi</a>
-                    </div>
                 </div>
             </div>
         </footer>
     </div>
 
     <!-- ==================== LOGIN SCREEN (MULTI-ROLE) ==================== -->
-    <div id="login-screen" class="fixed inset-0 bg-slate-50 dark:bg-slate-900 z-[250] flex flex-col items-center justify-center p-5 transform translate-y-full transition-transform duration-500">
+    <div id="login-screen" class="page-inactive bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center p-5">
         
         <button onclick="showLandingPage()" class="absolute top-6 left-6 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center gap-2 font-bold bg-white dark:bg-slate-800 px-5 py-2.5 rounded-full shadow-sm border border-slate-200 dark:border-slate-700 transition-all hover:-translate-x-1">
             <i data-lucide="arrow-left" class="w-4 h-4"></i> Kembali
         </button>
 
-        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 md:p-10 rounded-[2.5rem] w-full max-w-md shadow-2xl relative z-10 animate-slide-up">
+        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 md:p-10 rounded-[2.5rem] w-full max-w-md shadow-2xl relative z-10">
             <div class="text-center mb-10">
                 <div class="bg-gradient-to-tr from-emerald-500 to-teal-400 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/30 transform rotate-3">
                     <i data-lucide="shield-check" class="w-10 h-10 text-white -rotate-3"></i>
@@ -297,13 +288,12 @@
                     Otorisasi Akses <i data-lucide="log-in" class="w-5 h-5"></i>
                 </button>
             </form>
-            
             <p class="text-center text-xs text-slate-400 mt-8 font-medium">Lupa kata sandi? Hubungi Administrator sistem Anda.</p>
         </div>
     </div>
 
     <!-- ==================== MAIN APP CONTAINER (DASHBOARD) ==================== -->
-    <div id="app-container" class="fixed inset-0 flex h-full w-full z-[100] transform translate-y-full transition-transform duration-500 bg-slate-50 dark:bg-slate-900">
+    <div id="app-container" class="page-inactive flex h-full w-full bg-slate-50 dark:bg-slate-900">
         
         <!-- SIDEBAR (DESKTOP) -->
         <aside class="w-72 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col justify-between hidden md:flex flex-shrink-0 transition-colors duration-300 z-20">
@@ -327,6 +317,9 @@
                         <nav class="space-y-1">
                             <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-sm font-bold rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all">
                                 <i data-lucide="layout-dashboard" class="w-5 h-5 text-emerald-500"></i> Dashboard Eksekutif
+                            </button>
+                             <button onclick="switchTab('laporan')" id="nav-laporan" class="nav-btn w-full flex items-center gap-4 px-4 py-3.5 text-sm font-bold rounded-2xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all">
+                                <i data-lucide="file-text" class="w-5 h-5 text-blue-500"></i> Laporan & Export
                             </button>
                         </nav>
                     </div>
@@ -403,9 +396,9 @@
                         <h2 class="font-black text-3xl text-slate-800 dark:text-white tracking-tight" id="headerTitle">Dashboard</h2>
                         <p class="text-slate-500 dark:text-slate-400 font-medium mt-1" id="headerSubtitle">Ikhtisar sistem informasi tata kelola sampah pesantren.</p>
                     </div>
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-4" data-roles="admin">
                         <!-- Indikator Sync -->
-                        <div class="flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 cursor-pointer shadow-sm hover:shadow transition-all" id="sync-status" onclick="pullDataFromGAS()" title="Klik untuk Sinkronisasi Manual">
+                        <div class="role-hidden flex items-center gap-3 bg-white dark:bg-slate-800 px-4 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 cursor-pointer shadow-sm hover:shadow transition-all" id="sync-status" onclick="pullDataFromGAS()" title="Klik untuk Sinkronisasi Manual">
                             <div class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" id="sync-dot"></div>
                             <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest" id="sync-text">Standby</span>
                         </div>
@@ -414,7 +407,7 @@
             </header>
 
             <!-- SCROLLABLE CONTENT AREA -->
-            <div class="flex-1 overflow-y-auto p-5 md:p-10 relative bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+            <div class="flex-1 overflow-y-auto p-5 md:p-10 relative bg-slate-50 dark:bg-slate-900 transition-colors duration-300" id="main-content-scroll">
                 
                 <!-- TAB 1: DASHBOARD -->
                 <section id="tab-dashboard" class="tab-content block max-w-7xl mx-auto space-y-8 animate-fade-in">
@@ -449,6 +442,22 @@
                         </div>
                     </div>
 
+                    <!-- Charts Section -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                        <div class="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                            <h3 class="font-black text-xl text-slate-800 dark:text-white mb-4">Tren Setoran Sampah (7 Hari Terakhir)</h3>
+                            <div class="relative h-64 w-full">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+                            <h3 class="font-black text-xl text-slate-800 dark:text-white mb-4">Distribusi Kategori Sampah (Total)</h3>
+                            <div class="relative h-64 w-full flex justify-center">
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Skema Margin Table -->
                     <div class="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
                         <div class="p-8 border-b border-slate-100 dark:border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -469,6 +478,62 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50" id="tabelHargaMargin">
+                                    <!-- Rendered via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TAB 1B: LAPORAN & EXPORT -->
+                <section id="tab-laporan" class="tab-content hidden max-w-7xl mx-auto space-y-6 animate-fade-in">
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-sm p-8 md:p-12 relative overflow-hidden">
+                         <div class="flex justify-between items-center mb-8 border-b border-slate-100 dark:border-slate-700 pb-6">
+                            <div>
+                                <h2 class="text-2xl font-black text-slate-800 dark:text-white">Laporan Transaksi</h2>
+                                <p class="text-slate-500 dark:text-slate-400 mt-1 font-medium">Export data log transaksi ke format PDF.</p>
+                            </div>
+                            <button onclick="exportToPDF()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 transition-all shadow-sm">
+                                <i data-lucide="download" class="w-4 h-4"></i> Unduh PDF
+                            </button>
+                        </div>
+                        
+                        <!-- Area yang akan di-print ke PDF -->
+                        <div id="pdf-content" class="overflow-x-auto pdf-print-area rounded-xl">
+                             <div class="mb-6 text-center hidden" id="pdf-header">
+                                <h1 class="text-2xl font-black text-slate-800">Laporan Bank Sampah Nazif</h1>
+                                <p class="text-slate-500" id="pdf-date">Diekspor pada: -</p>
+                            </div>
+                            <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Log Penerimaan (Setor Masuk)</h3>
+                            <table class="w-full text-left border-collapse border border-slate-200 dark:border-slate-700 mb-8">
+                                <thead class="bg-slate-50 dark:bg-slate-900/50">
+                                    <tr>
+                                        <th class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">Tanggal & Waktu</th>
+                                        <th class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-widest">ID Trx</th>
+                                        <th class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-widest">Asrama</th>
+                                        <th class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-widest">Kategori</th>
+                                        <th class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-widest text-right">Berat (Kg)</th>
+                                        <th class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-widest text-right">Poin</th>
+                                        <th class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-widest text-right">Kas Dayah</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="laporan-setor-body" class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                    <!-- Rendered via JS -->
+                                </tbody>
+                            </table>
+                            
+                            <h3 class="font-bold text-lg mb-4 text-slate-800 dark:text-white">Log Pengeluaran (Penjualan Gudang)</h3>
+                            <table class="w-full text-left border-collapse border border-slate-200 dark:border-slate-700 mb-8">
+                                <thead class="bg-slate-50 dark:bg-slate-900/50">
+                                    <tr>
+                                        <th class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">Tanggal & Waktu</th>
+                                        <th class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-widest">Pengepul</th>
+                                        <th class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-widest">Kategori</th>
+                                        <th class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-widest text-right">Berat Keluar (Kg)</th>
+                                        <th class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] font-black text-slate-500 uppercase tracking-widest text-right">Total Uang Masuk</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="laporan-jual-body" class="divide-y divide-slate-100 dark:divide-slate-700/50">
                                     <!-- Rendered via JS -->
                                 </tbody>
                             </table>
@@ -611,7 +676,7 @@
                     <!-- Area Admin: Integrasi & Profil -->
                     <div class="grid md:grid-cols-2 gap-6">
                         <!-- Integrasi GAS -->
-                        <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-[2rem] shadow-sm relative overflow-hidden group">
+                        <div data-roles="admin" class="role-hidden bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-[2rem] shadow-sm relative overflow-hidden group">
                             <div class="absolute -right-10 -bottom-10 opacity-5 group-hover:opacity-10 transition-opacity"><i data-lucide="database" class="w-48 h-48"></i></div>
                             <h3 class="font-black text-xl mb-6 flex items-center gap-3 text-slate-800 dark:text-white"><div class="p-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg"><i data-lucide="database" class="w-5 h-5 text-emerald-500"></i></div> Backend Database</h3>
                             <div class="flex flex-col gap-4 relative z-10">
@@ -716,23 +781,32 @@
         function toggleTheme() { 
             document.documentElement.classList.toggle('dark'); 
             lucide.createIcons();
+            // Re-render charts to match theme
+            if(document.getElementById('tab-dashboard').classList.contains('block')) {
+                renderCharts();
+            }
         }
         
         // Navigation Functions
         function showLandingPage() {
-            document.getElementById('landing-page').style.transform = 'translateY(0)';
-            document.getElementById('login-screen').style.transform = 'translateY(100%)';
+            document.getElementById('landing-page').classList.remove('page-inactive');
+            document.getElementById('landing-page').classList.add('page-active');
+            
+            document.getElementById('login-screen').classList.remove('page-active');
+            document.getElementById('login-screen').classList.add('page-inactive');
             updateLandingStats();
         }
         
         function showLoginScreen() {
-            document.getElementById('landing-page').style.transform = 'translateY(-100%)';
-            document.getElementById('login-screen').style.transform = 'translateY(0)';
-            // Fokus otomatis ke input username (dengan sedikit jeda untuk animasi)
+            document.getElementById('landing-page').classList.remove('page-active');
+            document.getElementById('landing-page').classList.add('page-inactive');
+            
+            document.getElementById('login-screen').classList.remove('page-inactive');
+            document.getElementById('login-screen').classList.add('page-active');
             setTimeout(() => { document.getElementById('login-user').focus(); }, 300);
         }
 
-        // Custom Toast System (Notification)
+        // Custom Toast System
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -753,7 +827,7 @@
             }, 3000);
         }
 
-        // Custom Confirm/Input Modal System
+        // Custom Confirm/Input Modal
         let confirmActionCallback = null;
         function showConfirmModal(title, message, isInput = false, inputLabel = '', inputType = 'number', actionCallback) {
             document.getElementById('confirm-title').innerText = title;
@@ -763,7 +837,6 @@
             const icon = document.getElementById('confirm-icon');
             const actionBtn = document.getElementById('confirm-btn-action');
             
-            // Icon Styling based on type
             if(inputType === 'password') {
                 iconBg.className = 'w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-5 text-amber-500 shadow-inner';
                 icon.setAttribute('data-lucide', 'key');
@@ -825,7 +898,8 @@
 
         // ----------------- APP STATE & BUSINESS LOGIC -----------------
         const STORAGE_KEY = 'nazif_v_final';
-        // Business Rules / Scheme Margin (Sesuai Business Plan)
+        
+        // Business Rules / Scheme Margin
         const KATEGORI = {
             'plastik': { nama: 'Plastik (PET/Gelas)', icon: 'cup-soda', rpSantri: 1000, rpDayah: 1500, rpNazif: 500, color: 'sky' },
             'kardus':  { nama: 'Kertas / Kardus', icon: 'package-open', rpSantri: 700, rpDayah: 1000, rpNazif: 300, color: 'amber' },
@@ -833,7 +907,7 @@
             'organik': { nama: 'Organik (Kompos)', icon: 'leafy-green', rpSantri: 0, rpDayah: 0, rpNazif: 0, color: 'emerald' }
         };
 
-        // Data Inti Sistem
+        // Core App State
         let appState = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
             gasUrl: '',
             kasDayah: 0,
@@ -843,7 +917,6 @@
             historyKeluar: [],
             daftarAsrama: [ { id: 1, nama: 'Asrama Umar bin Khattab' }, { id: 2, nama: 'Asrama Abu Bakar' } ],
             users: [
-                // Akun default (Dapat diubah passwordnya di dalam sistem)
                 { id: 1, username: 'admin', password: '123', role: 'admin', name: 'Admin Master' },
                 { id: 2, username: 'operator', password: '123', role: 'operator', name: 'Ust. Operator' },
                 { id: 3, username: 'bendahara', password: '123', role: 'bendahara', name: 'Bendahara Dayah' },
@@ -855,13 +928,13 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appState)); 
         }
 
-        // Merekalkulasi seluruh state berdasar History (Single Source of Truth / Ledger System)
+        // Recalculate Ledger
         function recalculateStateFromHistory() {
             appState.kasDayah = 0;
             Object.keys(KATEGORI).forEach(k => appState.gudang[k] = 0);
             appState.daftarAsrama.forEach(a => appState.saldoAsrama[a.nama] = 0);
 
-            // Hitung Uang & Gudang Masuk dari POS Setor
+            // Calculate In
             appState.historyMasuk.forEach(trx => {
                 if(!appState.saldoAsrama[trx.asrama]) appState.saldoAsrama[trx.asrama] = 0;
                 appState.saldoAsrama[trx.asrama] += trx.poinSantri;
@@ -871,7 +944,7 @@
                 appState.kasDayah += trx.marginDayah;
             });
 
-            // Hitung Uang Masuk (Jual Gudang) & Uang Keluar (Tarik Voucher)
+            // Calculate Out
             appState.historyKeluar.forEach(trx => {
                 if (trx.type === 'JUAL') {
                     if(appState.gudang[trx.katId] !== undefined) appState.gudang[trx.katId] -= trx.berat;
@@ -882,19 +955,20 @@
                 }
             });
             
-            // Pencegahan floating point error (stok minus)
             Object.keys(appState.gudang).forEach(k => { if(appState.gudang[k] < 0) appState.gudang[k] = 0; });
         }
 
         let currentUser = null;
         let selectedKatPOS = 'plastik';
+        let trendChartInstance = null;
+        let categoryChartInstance = null;
 
-        // ----------------- GAS API INTEGRATION (PUSH & PULL) -----------------
+        // ----------------- GAS API INTEGRATION -----------------
         
         function updateSyncStatus(status) {
             const dot = document.getElementById('sync-dot');
             const text = document.getElementById('sync-text');
-            if(!dot || !text) return; // Proteksi jika elemen tidak ada
+            if(!dot || !text) return;
             
             if(status === 'syncing') {
                 dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-500 animate-spin';
@@ -912,7 +986,6 @@
             }
         }
 
-        // POST (Kirim Data Baru)
         async function pushDataToGAS(action, payloadData) {
             if (!appState.gasUrl) return;
             updateSyncStatus('syncing');
@@ -920,7 +993,7 @@
                 payloadData.operator = currentUser ? currentUser.name : "System";
                 await fetch(appState.gasUrl, {
                     method: 'POST',
-                    mode: 'no-cors', // Penting untuk Google Apps Script
+                    mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: action, data: payloadData })
                 });
@@ -931,9 +1004,11 @@
             }
         }
 
-        // GET (Tarik Data Massal / Auto-Pull)
         async function pullDataFromGAS(isSilent = false) {
-            if (!appState.gasUrl) return;
+            if (!appState.gasUrl) {
+                if(!isSilent) showToast("URL Konfigurasi GAS belum diisi.", "error");
+                return;
+            }
             if(!isSilent) showToast("Menarik data dari server (GAS)...", "info");
             updateSyncStatus('syncing');
             
@@ -942,21 +1017,20 @@
                 const result = await res.json();
                 
                 if(result.status === 'success') {
-                    // Update History Database
                     if(result.data.historyMasuk) appState.historyMasuk = result.data.historyMasuk;
                     if(result.data.historyKeluar) appState.historyKeluar = result.data.historyKeluar;
                     
-                    // Rekalkulasi Akuntansi (Gudang, Saldo, Kas)
                     recalculateStateFromHistory();
                     saveState();
                     
-                    // Segarkan UI Aktif
                     if(currentUser) {
                         renderDashboard();
                         renderGudang();
                         renderTabungan();
                         setupPenjualan();
-                        renderKlasemen('klasemen-list');
+                        renderKlasemen('klasemen-list', false);
+                        renderLaporan();
+                        renderCharts();
                     } else {
                         updateLandingStats();
                     }
@@ -967,7 +1041,7 @@
             } catch (err) {
                 console.error("Gagal PULL dari GAS:", err);
                 updateSyncStatus('error');
-                if(!isSilent) showToast("Gagal tarik data. Pastikan URL GAS benar.", "error");
+                if(!isSilent) showToast("Gagal tarik data. Cek koneksi / URL.", "error");
             }
         }
 
@@ -997,6 +1071,7 @@
         
         function doLogin(user) {
             currentUser = user;
+            
             // Set Profil UI
             document.getElementById('user-name').innerText = user.name;
             document.getElementById('user-role').innerText = user.role;
@@ -1005,12 +1080,15 @@
             document.getElementById('mob-user-initial').innerText = inisial;
             document.getElementById('setting-my-name').innerText = `${user.name} (${user.username})`;
             
-            // Animasi Transisi Halaman
-            document.getElementById('login-screen').style.transform = 'translateY(100%)';
-            document.getElementById('app-container').style.transform = 'translateY(0)';
+            // UI Transition
+            document.getElementById('login-screen').classList.remove('page-active');
+            document.getElementById('login-screen').classList.add('page-inactive');
+            
+            document.getElementById('app-container').classList.remove('page-inactive');
+            document.getElementById('app-container').classList.add('page-active');
             document.getElementById('mobile-nav').classList.remove('hidden');
 
-            // Terapkan RBAC (Role-Based Access Control) pada Menu Navigasi
+            // Apply RBAC
             document.querySelectorAll('[data-roles]').forEach(el => {
                 if (el.getAttribute('data-roles').split(',').includes(user.role)) {
                     el.classList.remove('role-hidden');
@@ -1019,19 +1097,19 @@
                 }
             });
             
-            // Routing tab pertama berdasarkan role
+            // Default Routing
             const roleTabs = { admin: 'dashboard', pimpinan: 'dashboard', operator: 'pos', bendahara: 'tabungan', musyrif: 'klasemen' };
             switchTab(roleTabs[user.role] || 'dashboard');
             
-            // Persiapan form pengaturan
+            // Set setting values
             document.getElementById('setting-gas-url').value = appState.gasUrl || '';
         }
 
         function logout() {
             currentUser = null;
-            document.getElementById('app-container').style.transform = 'translateY(100%)';
+            document.getElementById('app-container').classList.remove('page-active');
+            document.getElementById('app-container').classList.add('page-inactive');
             document.getElementById('mobile-nav').classList.add('hidden');
-            // Bersihkan form
             document.getElementById('login-user').value = '';
             document.getElementById('login-pass').value = '';
             showLandingPage();
@@ -1039,18 +1117,17 @@
 
         // ----------------- NAVIGATION -----------------
         function switchTab(tabId) {
-            // Sembunyikan konten tab lain
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
             
-            // --- Update UI Mobile Nav Active State ---
+            // Mobile Nav Active State
             document.querySelectorAll('#mobile-nav button').forEach(b => {
                 b.classList.remove('text-emerald-600'); b.classList.add('text-slate-400');
             });
             const mobBtn = document.getElementById(`mob-${tabId}`);
             if(mobBtn) { mobBtn.classList.add('text-emerald-600'); mobBtn.classList.remove('text-slate-400'); }
 
-            // Title Dinamis
+            // Titles
             const titleMap = { 
                 dashboard: ['Dashboard Eksekutif', 'Ikhtisar sistem informasi tata kelola sampah pesantren.'], 
                 pos: ['Pusat Penerimaan', 'Pencatatan setoran sampah sirkular dari Asrama.'], 
@@ -1058,37 +1135,252 @@
                 penjualan: ['Pencairan Gudang', 'Ubah stok gudang menjadi uang kas nyata.'], 
                 tabungan: ['Buku Tabungan', 'Pencairan poin asrama menjadi voucher koperasi.'], 
                 klasemen: ['Eco Dayah Index', 'Peringkat asrama terbersih berdasarkan poin & sedekah.'], 
-                pengaturan: ['Pengaturan Sistem', 'Konfigurasi database, pengguna, dan keamanan.'] 
+                pengaturan: ['Pengaturan Sistem', 'Konfigurasi database, pengguna, dan keamanan.'],
+                laporan: ['Laporan & Export', 'Log transaksi harian dan export dokumen PDF.']
             };
             if(titleMap[tabId]) {
                 document.getElementById('headerTitle').innerText = titleMap[tabId][0];
                 document.getElementById('headerSubtitle').innerText = titleMap[tabId][1];
             }
 
-            // Lazy Load Eksekusi (Hanya jalankan fungsi berat saat tab dibuka)
-            if(tabId === 'dashboard') { renderDashboard(); renderTabelMargin(); }
+            // Lazy Data Loading
+            if(tabId === 'dashboard') { renderDashboard(); renderTabelMargin(); renderCharts(); }
             if(tabId === 'pos') { renderAsramaDropdown('pos-asrama'); renderKategoriPOS(); }
             if(tabId === 'gudang') renderGudang();
             if(tabId === 'penjualan') setupPenjualan();
             if(tabId === 'tabungan') renderTabungan();
-            if(tabId === 'klasemen') renderKlasemen('klasemen-list');
+            if(tabId === 'klasemen') renderKlasemen('klasemen-list', false);
             if(tabId === 'pengaturan') { renderMasterAsrama(); renderUsers(); }
+            if(tabId === 'laporan') renderLaporan();
+        }
+
+        // ----------------- CHARTS & VISUALIZATION -----------------
+        function renderCharts() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#f8fafc' : '#334155';
+            const gridColor = isDark ? '#334155' : '#e2e8f0';
+
+            // Data for Trend Chart (Last 7 Days)
+            const last7Days = [];
+            const trendData = [];
+            
+            for(let i=6; i>=0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toLocaleDateString('id-ID', {day: '2-digit', month: 'short'});
+                last7Days.push(dateStr);
+                
+                // Sum weight for this day
+                const dayWeight = appState.historyMasuk.filter(trx => {
+                    if(!trx.idTrx) return false;
+                    // Extract timestamp loosely
+                    try {
+                        const trxDate = new Date(parseInt(trx.idTrx.split('-')[1]));
+                        return trxDate.getDate() === d.getDate() && trxDate.getMonth() === d.getMonth();
+                    } catch(e) { return false; }
+                }).reduce((a,b) => a + (b.berat || 0), 0);
+                
+                trendData.push(dayWeight);
+            }
+
+            if(trendChartInstance) trendChartInstance.destroy();
+            const ctxTrend = document.getElementById('trendChart').getContext('2d');
+            trendChartInstance = new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: last7Days,
+                    datasets: [{
+                        label: 'Total Setoran (Kg)',
+                        data: trendData,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } },
+                        x: { grid: { display: false }, ticks: { color: textColor } }
+                    }
+                }
+            });
+
+            // Data for Category Donut Chart
+            let catData = [0, 0, 0, 0];
+            appState.historyMasuk.forEach(trx => {
+                const w = trx.berat || 0;
+                if(trx.katId === 'plastik') catData[0] += w;
+                else if(trx.katId === 'kardus') catData[1] += w;
+                else if(trx.katId === 'logam') catData[2] += w;
+                else if(trx.katId === 'organik') catData[3] += w;
+            });
+
+            if(categoryChartInstance) categoryChartInstance.destroy();
+            const ctxCat = document.getElementById('categoryChart').getContext('2d');
+            categoryChartInstance = new Chart(ctxCat, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Plastik', 'Kardus', 'Logam', 'Organik'],
+                    datasets: [{
+                        data: catData,
+                        backgroundColor: ['#38bdf8', '#fbbf24', '#94a3b8', '#10b981'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: textColor } }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        // ----------------- PDF EXPORT -----------------
+        function renderLaporan() {
+            // Setor Table
+            const tbodySetor = document.getElementById('laporan-setor-body');
+            tbodySetor.innerHTML = '';
+            
+            // Sorting descending by ID (which contains timestamp)
+            const sortedMasuk = [...(appState.historyMasuk || [])].sort((a,b) => {
+                try { return parseInt(b.idTrx.split('-')[1]) - parseInt(a.idTrx.split('-')[1]); } 
+                catch(e) { return 0; }
+            });
+
+            if(sortedMasuk.length === 0) {
+                tbodySetor.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-slate-500 font-medium">Belum ada data setoran.</td></tr>';
+            } else {
+                sortedMasuk.slice(0, 100).forEach(trx => {
+                    const berat = Number(trx.berat) || 0;
+                    const poin = Number(trx.poinSantri) || 0;
+                    const kas = Number(trx.marginDayah) || 0;
+                    
+                    let katName = trx.kategoriNama;
+                    if (!katName && KATEGORI[trx.katId]) katName = KATEGORI[trx.katId].nama;
+                    if (!katName) katName = trx.katId || '-';
+
+                    let dateStr = '-';
+                    try {
+                        if (trx.idTrx && trx.idTrx.includes('-')) {
+                            const ts = parseInt(trx.idTrx.split('-')[1]);
+                            if (!isNaN(ts)) {
+                                const d = new Date(ts);
+                                dateStr = d.toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'}) + ' ' + d.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+                            }
+                        }
+                    } catch(e) {}
+
+                    tbodySetor.innerHTML += `
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                            <td class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] text-slate-500 dark:text-slate-400">${dateStr}</td>
+                            <td class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[10px] font-mono text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300">${trx.idTrx || '-'}</td>
+                            <td class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm font-bold text-slate-800 dark:text-white">${trx.asrama || '-'}</td>
+                            <td class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-300">${katName}</td>
+                            <td class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm text-right font-black text-slate-700 dark:text-slate-200">${berat.toFixed(1)}</td>
+                            <td class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-xs text-right font-bold text-blue-600 dark:text-blue-400">${formatRp(poin)}</td>
+                            <td class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-xs text-right font-bold text-emerald-600 dark:text-emerald-400">${formatRp(kas)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // Jual Table
+            const tbodyJual = document.getElementById('laporan-jual-body');
+            tbodyJual.innerHTML = '';
+            
+            const salesOut = (appState.historyKeluar || []).filter(t => t.type === 'JUAL');
+            // Urutkan data pengeluaran (terbaru di atas)
+            salesOut.sort((a,b) => {
+                try { 
+                    const aTs = a.idTrx ? parseInt(a.idTrx.split('-')[1]) : 0;
+                    const bTs = b.idTrx ? parseInt(b.idTrx.split('-')[1]) : 0;
+                    return bTs - aTs; 
+                } 
+                catch(e) { return 0; }
+            });
+            if (!salesOut[0]?.idTrx) salesOut.reverse();
+
+            if(salesOut.length === 0) {
+                tbodyJual.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500 font-medium">Belum ada data penjualan gudang.</td></tr>';
+            } else {
+                salesOut.slice(0, 100).forEach(trx => {
+                    const berat = Number(trx.berat) || 0;
+                    const total = Number(trx.total) || 0;
+                    
+                    let katName = KATEGORI[trx.katId] ? KATEGORI[trx.katId].nama : (trx.katId || '-');
+
+                    let dateStr = '-';
+                    try {
+                        if (trx.idTrx && trx.idTrx.includes('-')) {
+                            const ts = parseInt(trx.idTrx.split('-')[1]);
+                            if (!isNaN(ts)) {
+                                const d = new Date(ts);
+                                dateStr = d.toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'}) + ' ' + d.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+                            }
+                        }
+                    } catch(e) {}
+
+                    tbodyJual.innerHTML += `
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                            <td class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-[11px] text-slate-500 dark:text-slate-400">${dateStr}</td>
+                            <td class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm font-bold text-slate-800 dark:text-white">${trx.pengepul || '-'}</td>
+                            <td class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-xs font-semibold text-slate-600 dark:text-slate-300">${katName}</td>
+                            <td class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm text-right font-black text-slate-700 dark:text-slate-200">${berat.toFixed(1)}</td>
+                            <td class="border border-slate-200 dark:border-slate-700 px-4 py-3 text-sm text-right font-black text-emerald-600 dark:text-emerald-400">${formatRp(total)}</td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function exportToPDF() {
+            const element = document.getElementById('pdf-content');
+            
+            document.getElementById('pdf-header').classList.remove('hidden');
+            document.getElementById('pdf-date').innerText = `Diekspor pada: ${new Date().toLocaleString('id-ID')}`;
+            
+            const opt = {
+                margin:       10,
+                filename:     `Laporan_Nazif_${Date.now()}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            showToast("Menghasilkan dokumen PDF...", "info");
+            
+            html2pdf().set(opt).from(element).save().then(() => {
+                document.getElementById('pdf-header').classList.add('hidden');
+                showToast("PDF Berhasil diunduh!");
+            }).catch(err => {
+                console.error("PDF Export Error:", err);
+                document.getElementById('pdf-header').classList.add('hidden');
+                showToast("Gagal menghasilkan PDF", "error");
+            });
         }
 
         // ----------------- LANDING PAGE & DASHBOARD -----------------
         function updateLandingStats() {
             let totSaldo = Object.values(appState.saldoAsrama).reduce((a, b) => a + b, 0);
-            let totKg = appState.historyMasuk.reduce((a, b) => a + b.berat, 0);
+            let totKg = appState.historyMasuk.reduce((a, b) => a + (b.berat || 0), 0);
             
             document.getElementById('lp-total-kg').innerText = totKg.toFixed(1);
             document.getElementById('lp-kas-dayah').innerText = formatRp(appState.kasDayah);
             document.getElementById('lp-poin-santri').innerText = formatRp(totSaldo);
-            renderKlasemen('lp-klasemen-list', true); // Hanya render top 3
+            renderKlasemen('lp-klasemen-list', true); // Landing page top 3
         }
 
         function renderDashboard() {
             let totSaldo = Object.values(appState.saldoAsrama).reduce((a, b) => a + b, 0);
-            let totKg = appState.historyMasuk.reduce((a, b) => a + b.berat, 0);
+            let totKg = appState.historyMasuk.reduce((a, b) => a + (b.berat || 0), 0);
             let totGudang = Object.values(appState.gudang).reduce((a,b)=>a+b,0);
             
             document.getElementById('dash-kas').innerText = formatRp(appState.kasDayah);
@@ -1116,32 +1408,37 @@
 
         function renderKlasemen(elementId, isLanding = false) {
             let rekap = {};
-            // Hitung poin prestasi (Sedekah tetap dihitung sebagai prestasi meskipun jadi Rp 0)
             appState.historyMasuk.forEach(trx => {
                 if(!rekap[trx.asrama]) rekap[trx.asrama] = { nama: trx.asrama, poin: 0, kg: 0 };
-                rekap[trx.asrama].poin += trx.poinPrestasi; 
-                rekap[trx.asrama].kg += trx.berat; 
+                rekap[trx.asrama].poin += (trx.poinPrestasi || trx.poinSantri || 0); 
+                rekap[trx.asrama].kg += (trx.berat || 0); 
             });
             
-            // Urutkan berdasarkan poin tertinggi
             let sorted = Object.values(rekap).sort((a,b) => b.poin - a.poin);
-            if(isLanding) sorted = sorted.slice(0, 3); // Landing page hanya butuh top 3
+            if(isLanding) sorted = sorted.slice(0, 3); 
 
             const list = document.getElementById(elementId);
-            list.innerHTML = sorted.map((asr, i) => `
-                <li class="p-5 md:p-6 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+            list.innerHTML = sorted.map((asr, i) => {
+                const nameColor = isLanding ? 'text-white' : 'text-slate-800 dark:text-white';
+                const subColor = isLanding ? 'text-slate-300' : 'text-slate-500 dark:text-slate-400';
+                const subBgColor = isLanding ? 'bg-slate-800' : 'bg-slate-100 dark:bg-slate-900';
+                const hoverBg = isLanding ? 'hover:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50';
+                
+                return `
+                <li class="p-5 md:p-6 flex justify-between items-center ${hoverBg} transition-colors group">
                     <div class="flex items-center gap-5">
                         <div class="w-12 h-12 md:w-14 md:h-14 rounded-full ${i===0?'bg-gradient-to-br from-yellow-300 to-yellow-500 text-yellow-900 border-2 border-yellow-200 shadow-xl':(i===1?'bg-slate-200 text-slate-700 border-2 border-slate-300':(i===2?'bg-amber-600 text-amber-50 border-2 border-amber-500 shadow-md':'bg-slate-50 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700 font-medium'))} flex items-center justify-center font-black text-xl md:text-2xl transition-transform group-hover:scale-110">${i+1}</div>
                         <div>
-                            <span class="font-black text-lg md:text-xl block text-slate-800 dark:text-white tracking-tight">${asr.nama}</span>
-                            <span class="text-[11px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-900 px-2.5 py-1 rounded mt-1 inline-block uppercase tracking-wider">${asr.kg.toFixed(1)} Kg Bersih</span>
+                            <span class="font-black text-lg md:text-xl block ${nameColor} tracking-tight">${asr.nama}</span>
+                            <span class="text-[11px] font-bold ${subColor} ${subBgColor} px-2.5 py-1 rounded mt-1 inline-block uppercase tracking-wider">${asr.kg.toFixed(1)} Kg Bersih</span>
                         </div>
                     </div>
                     <div class="text-right">
                         <span class="font-black text-emerald-600 dark:text-emerald-400 block text-2xl md:text-3xl">${formatRp(asr.poin)}</span>
                         <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 block">Poin Keaktifan</span>
                     </div>
-                </li>`).join('');
+                </li>`;
+            }).join('');
             
             if(sorted.length === 0) list.innerHTML = `<li class="p-10 text-center text-slate-400 font-medium flex flex-col items-center"><i data-lucide="inbox" class="w-10 h-10 mb-3 opacity-50"></i> Belum ada data kompetisi.</li>`;
             lucide.createIcons();
@@ -1203,7 +1500,6 @@
             if(!asrama || isNaN(berat) || berat <= 0) return showToast("Data timbangan tidak lengkap/valid", "error");
 
             const poinS = isSedekah ? 0 : (berat * katInfo.rpSantri);
-            // Margin dayah menyerap hak santri jika disedekahkan
             const marDayah = isSedekah ? (berat * (katInfo.rpDayah + katInfo.rpSantri)) : (berat * katInfo.rpDayah);
             
             const payload = {
@@ -1213,14 +1509,13 @@
             };
             
             appState.historyMasuk.push(payload);
-            recalculateStateFromHistory(); // Rekalkulasi akuntansi instan
+            recalculateStateFromHistory(); 
             saveState(); 
             
             document.getElementById('formPOS').reset(); 
             calcPOS();
             showToast(`Sukses: ${berat}Kg dari ${asrama} telah dicatat.`);
             
-            // Background Sync
             pushDataToGAS('POST_SETOR', payload);
         }
 
@@ -1270,15 +1565,14 @@
             if(!k || isNaN(b) || b <= 0 || b > appState.gudang[k]) return showToast("Stok gudang tidak mencukupi", "error");
             
             showConfirmModal("Cairkan Gudang", `Jual ${b}Kg ${KATEGORI[k].nama} seharga ${formatRp(rp)} ke ${pengepul}?`, false, '', 'number', () => {
-                const payload = { type: 'JUAL', katId: k, berat: b, total: rp, pengepul: pengepul };
+                const payload = { idTrx: 'OUT-'+Date.now(), type: 'JUAL', katId: k, berat: b, total: rp, pengepul: pengepul };
                 appState.historyKeluar.push(payload);
-                recalculateStateFromHistory(); // Uang Kas Bertambah, Gudang Berkurang
+                recalculateStateFromHistory();
                 saveState();
-                
-                document.getElementById('formPenjualan').reset();
                 setupPenjualan();
-                showToast("Pencairan Gudang Berhasil. Kas Bertambah!");
-                
+                renderGudang();
+                showToast(`Sukses: Penjualan ke ${pengepul} berhasil dicatat.`);
+                document.getElementById('formPenjualan').reset();
                 pushDataToGAS('POST_JUAL', payload);
             });
         }
@@ -1314,7 +1608,7 @@
                 
                 const payload = { type: 'TARIK', asrama: asrama, jumlah: jumlah };
                 appState.historyKeluar.push(payload);
-                recalculateStateFromHistory(); // Saldo Asrama Berkurang
+                recalculateStateFromHistory();
                 saveState();
                 
                 renderTabungan();
@@ -1327,7 +1621,7 @@
         // ----------------- PENGATURAN & MASTER DATA (ADMIN) -----------------
         
         function renderMasterAsrama() {
-            if(!appState.daftarAsrama) appState.daftarAsrama = []; // Fallback
+            if(!appState.daftarAsrama) appState.daftarAsrama = [];
             document.getElementById('count-asrama').innerText = appState.daftarAsrama.length;
             
             const list = document.getElementById('master-asrama-body');
@@ -1346,7 +1640,7 @@
             if(appState.daftarAsrama.find(x => x.nama.toLowerCase() === nm.toLowerCase())) return showToast("Asrama sudah terdaftar", "error");
             
             appState.daftarAsrama.push({ id: Date.now(), nama: nm });
-            if(!appState.saldoAsrama[nm]) appState.saldoAsrama[nm] = 0; // Initialize saldo
+            if(!appState.saldoAsrama[nm]) appState.saldoAsrama[nm] = 0;
             saveState();
             
             document.getElementById('master-nama-asrama').value = '';
@@ -1428,13 +1722,11 @@
         document.addEventListener('DOMContentLoaded', () => { 
             lucide.createIcons();
             
-            // Rekonstruksi data dari LocalStorage jika ada (Single Source of Truth)
             if(!appState.daftarAsrama) appState.daftarAsrama = [ { id: 1, nama: 'Asrama Umar bin Khattab' } ];
             recalculateStateFromHistory();
             
-            // Auto Pull dari Server (Background Sync) saat aplikasi dimuat pertama kali
             if(appState.gasUrl) {
-                pullDataFromGAS(true); // silent true
+                pullDataFromGAS(true);
             } else {
                 updateLandingStats(); 
             }
