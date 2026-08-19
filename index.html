@@ -956,16 +956,9 @@
             if(!isSilent) showToast("Menarik data dari server (GAS)...", "info");
             updateSyncStatus('syncing');
             try {
-                // Tambahkan timeout 10 detik agar tidak hang jika server down
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000);
-                
-                const res = await fetch(appState.gasUrl, { signal: controller.signal });
-                clearTimeout(timeoutId);
-                
-                if (!res.ok) throw new Error("HTTP Status " + res.status);
+                const res = await fetch(appState.gasUrl); 
+                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
                 const result = await res.json();
-                
                 if(result.status === 'success') {
                     if(result.data.historyMasuk) appState.historyMasuk = result.data.historyMasuk;
                     if(result.data.historyKeluar) appState.historyKeluar = result.data.historyKeluar;
@@ -974,10 +967,10 @@
                     updateSyncStatus('success'); if(!isSilent) showToast("Database disinkronisasi!", "success");
                 }
             } catch (err) { 
-                console.warn("Mode Offline Aktif:", err.message); 
+                console.warn("Mode Offline aktif (Gagal PULL API):", err.message); 
                 updateSyncStatus('error'); 
-                if(!isSilent) showToast("Gagal koneksi. Menggunakan data lokal (Offline).", "error"); 
-                // FIX: Tetap render UI dengan data lokal meskipun gagal konek ke GAS
+                if(!isSilent) showToast("Gagal konek ke Server. Menggunakan data lokal...", "error"); 
+                // FIX: Tetap render UI dengan data lokal (Offline) meskipun fetch gagal
                 if(currentUser) { renderSemua(); } else { updateLandingStats(); }
             }
         }
@@ -1150,14 +1143,16 @@
         // CRUD TRANSAKSI
         function hapusTrxSetor(idTrx) {
             showConfirmModal("Hapus Transaksi", "Yakin ingin menghapus setoran ini? Saldo, gudang, dan kas akan dikalkulasi ulang.", false, '', 'number', () => {
-                appState.historyMasuk = appState.historyMasuk.filter(t => t.idTrx !== idTrx);
+                appState.historyMasuk = appState.historyMasuk.filter(t => String(t.idTrx) !== String(idTrx));
                 recalculateStateFromHistory(); saveState(); renderSemua(); showToast("Transaksi berhasil dihapus");
+                pushDataToGAS('DELETE_SETOR', { idTrx: String(idTrx) });
             });
         }
         function hapusTrxJual(idTrx) {
             showConfirmModal("Batal Penjualan", "Yakin ingin membatalkan penjualan ini? Stok gudang akan kembali, kas dayah akan berkurang.", false, '', 'number', () => {
-                appState.historyKeluar = appState.historyKeluar.filter(t => t.idTrx !== idTrx);
+                appState.historyKeluar = appState.historyKeluar.filter(t => String(t.idTrx) !== String(idTrx) || t.type !== 'JUAL');
                 recalculateStateFromHistory(); saveState(); renderSemua(); showToast("Penjualan dibatalkan");
+                pushDataToGAS('DELETE_JUAL', { idTrx: String(idTrx) });
             });
         }
 
@@ -1179,12 +1174,16 @@
         function simpanEditSetor() {
             const idTrx = document.getElementById('edit-setor-id').value; const asrama = document.getElementById('edit-setor-asrama').value; const katId = document.getElementById('edit-setor-kategori').value;
             const berat = parseFloat(document.getElementById('edit-setor-berat').value); const poinManual = parseFloat(document.getElementById('edit-setor-poin').value) || 0; const isSedekah = document.getElementById('edit-setor-sedekah').checked;
-            const trxIndex = appState.historyMasuk.findIndex(t => t.idTrx === idTrx); if(trxIndex === -1) return tutupModalEditSetor();
+            const trxIndex = appState.historyMasuk.findIndex(t => String(t.idTrx) === String(idTrx)); if(trxIndex === -1) return tutupModalEditSetor();
             const katInfo = appState.kategori[katId] || { rpSantri: 0, rpDayah: 0, rpNazif: 0, nama: katId };
             const expectedPoinS = berat * katInfo.rpSantri; const poinS = isSedekah ? 0 : poinManual; const sisaPoinS = expectedPoinS - poinS;
             const marDayah = (berat * katInfo.rpDayah) + (isSedekah ? expectedPoinS : sisaPoinS); const feeNzf = berat * katInfo.rpNazif;
-            appState.historyMasuk[trxIndex] = { ...appState.historyMasuk[trxIndex], asrama: asrama, katId: katId, kategoriNama: katInfo.nama, berat: berat, isSedekah: isSedekah, poinSantri: poinS, poinPrestasi: expectedPoinS, marginDayah: marDayah, feeNazif: feeNzf };
+            
+            const updatedPayload = { ...appState.historyMasuk[trxIndex], asrama: asrama, katId: katId, kategoriNama: katInfo.nama, berat: berat, isSedekah: isSedekah, poinSantri: poinS, poinPrestasi: expectedPoinS, marginDayah: marDayah, feeNazif: feeNzf };
+            appState.historyMasuk[trxIndex] = updatedPayload;
+            
             recalculateStateFromHistory(); saveState(); renderSemua(); tutupModalEditSetor(); showToast("Transaksi diperbarui");
+            pushDataToGAS('EDIT_SETOR', updatedPayload);
         }
         document.getElementById('edit-setor-berat').addEventListener('input', updatePoinEditSetor);
         document.getElementById('edit-setor-kategori').addEventListener('change', updatePoinEditSetor);
@@ -1213,9 +1212,13 @@
         function simpanEditJual() {
             const idTrx = document.getElementById('edit-jual-id').value; const pengepul = document.getElementById('edit-jual-pengepul').value;
             const katId = document.getElementById('edit-jual-kategori').value; const berat = parseFloat(document.getElementById('edit-jual-berat').value); const total = parseFloat(document.getElementById('edit-jual-total').value);
-            const trxIndex = appState.historyKeluar.findIndex(t => t.idTrx === idTrx && t.type === 'JUAL'); if(trxIndex === -1) return tutupModalEditJual();
-            appState.historyKeluar[trxIndex] = { ...appState.historyKeluar[trxIndex], pengepul: pengepul, katId: katId, berat: berat, total: total };
+            const trxIndex = appState.historyKeluar.findIndex(t => String(t.idTrx) === String(idTrx) && t.type === 'JUAL'); if(trxIndex === -1) return tutupModalEditJual();
+            
+            const updatedPayload = { ...appState.historyKeluar[trxIndex], pengepul: pengepul, katId: katId, berat: berat, total: total };
+            appState.historyKeluar[trxIndex] = updatedPayload;
+            
             recalculateStateFromHistory(); saveState(); renderSemua(); tutupModalEditJual(); showToast("Penjualan diperbarui");
+            pushDataToGAS('EDIT_JUAL', updatedPayload);
         }
 
         // ----------------- DASHBOARD & LANDING PAGE -----------------
@@ -1458,6 +1461,3 @@
     </script>
 </body>
 </html>
-```
-
-Silakan melakukan *Commit* ke GitHub untuk mengaplikasikan perbaikan ini. Jika ada penambahan fitur lain sebelum *launching*, saya siap membantu.
